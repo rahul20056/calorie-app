@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lrAr4UMS7s9JArUX4BhDM0Zx1S01A1j7p/9dijGKjWs='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.github.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18262a" media="(prefers-color-scheme: dark)">
@@ -316,7 +317,7 @@ tr.tot td{font-weight:700;background:var(--tbg);color:var(--ttx);border-top:2px 
       <div><label>GitHub username</label><input id="sOwner" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
       <div><label>Private data folder name</label><input id="sRepo" value="calorie-data" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
       <div><label>Access key (token)</label><input id="sTok" type="password" autocomplete="off"></div>
-      <div><label>Passphrase (8+ characters)</label><input id="sPass" type="password" autocomplete="off"></div>
+      <div><label>Passphrase (12+ characters for a new folder)</label><input id="sPass" type="password" autocomplete="off"></div>
       <div><label>Repeat passphrase (first device only)</label><input id="sPass2" type="password" autocomplete="off"></div>
     </div>
     <p class="hint">First device: type the passphrase twice. Every other device: type the same passphrase once. If this device already has data, it is merged with what is in GitHub, nothing is overwritten. The key and passphrase are remembered on this device only.</p>
@@ -336,6 +337,30 @@ const K="calorieTrackerV1";
 let S={items:[],logs:[],targets:[],ex:[],wt:[],combos:[]};
 try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 S.targets=S.targets||[];S.ex=S.ex||[];S.wt=S.wt||[];S.combos=S.combos||[];if(S.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:S.goal});delete S.goal;
+/* ---------- input checks (imports, sync, saved data) ---------- */
+const SID=/^[A-Za-z0-9_-]{1,64}$/;
+const cnum=(v,max=1e9)=>{v=+v;return Number.isFinite(v)?Math.min(Math.max(v,0),max):0};
+const cstr=(v,n=80)=>String(v==null?"":v).slice(0,n);
+const cts=v=>{v=+v;return Number.isFinite(v)&&v>0&&v<4e12?v:null};
+function cleanRec(c,r){
+  if(!r||typeof r!=="object")return null;const o={};
+  if(c==="targets"){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r.from)))return null;o.from=String(r.from);o.needed=cnum(r.needed,50000);o.goal=cnum(r.goal,50000)}
+  else{if(!SID.test(String(r.id)))return null;o.id=String(r.id)}
+  if(c==="items"){o.name=cstr(r.name);o.unit=r.unit==="ml"?"ml":"g";NUT.forEach(([k])=>o[k]=cnum(r[k],1e6))}
+  else if(c==="logs"){const ts=cts(r.ts);if(ts===null||!SID.test(String(r.itemId)))return null;
+    Object.assign(o,{itemId:String(r.itemId),name:cstr(r.name),unit:r.unit==="ml"?"ml":"g",amt:cnum(r.amt,1e7),ts});o.n={};NUT.forEach(([k])=>o.n[k]=cnum((r.n||{})[k],1e9));
+    if(r.gid!==undefined){if(!SID.test(String(r.gid)))return null;o.gid=String(r.gid);o.cid=SID.test(String(r.cid))?String(r.cid):"";o.combo=cstr(r.combo);
+      if(r.tot!==undefined)o.tot=cnum(r.tot,1e7);if(r.ate!==undefined)o.ate=cnum(r.ate,1e7);if(r.made!==undefined)o.made=cnum(r.made,1e7)}}
+  else if(c==="ex"){const ts=cts(r.ts);if(ts===null)return null;Object.assign(o,{ts,name:cstr(r.name),kcal:cnum(r.kcal,1e5)})}
+  else if(c==="wt"){const ts=cts(r.ts);if(ts===null)return null;Object.assign(o,{ts,kg:cnum(r.kg,500)})}
+  else if(c==="combos"){o.name=cstr(r.name);o.items=(Array.isArray(r.items)?r.items:[]).slice(0,200).map(String).filter(x=>SID.test(x))}
+  if(r.u!==undefined)o.u=cnum(r.u,4e12);
+  return o}
+function cleanDel(d){const o={};if(d&&typeof d==="object")Object.keys(d).forEach(k=>{const v=d[k];
+  if(/^(items|logs|targets|ex|wt|combos):[A-Za-z0-9_.:-]{1,64}$/.test(k)&&v&&typeof v==="object"&&/^(core|\d{4}-\d{2})$/.test(String(v.f))&&Number.isFinite(+v.t))o[k]={t:+v.t,f:String(v.f)}});return o}
+function cleanState(o){o=o||{};const r={del:cleanDel(o.del)};["items","logs","targets","ex","wt","combos"].forEach(c=>{r[c]=(Array.isArray(o[c])?o[c]:[]).map(x=>cleanRec(c,x)).filter(Boolean)});return r}
+function cleanFile(o){const rec={};["items","logs","targets","ex","wt","combos"].forEach(c=>{rec[c]=(o&&o.rec&&Array.isArray(o.rec[c])?o.rec[c]:[]).map(x=>cleanRec(c,x)).filter(Boolean)});return{v:1,rec,del:cleanDel(o&&o.del)}}
+S=cleanState(S);
 S.del=S.del||{};
 const COLS=["items","logs","targets","ex","wt","combos"];
 COLS.forEach(c=>S[c].forEach(r=>{if(r.u===undefined)r.u=(c==="logs"||c==="ex"||c==="wt")?(r.ts||1):1}));
@@ -394,7 +419,7 @@ $("iSave").onclick=()=>{
 function renderItems(){renderCombos();
   const q=$("iSearch").value.toLowerCase(),L=S.items.filter(i=>i.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
   $("iCount").textContent=S.items.length;
-  $("iTable").innerHTML=L.length?`<tr><th>Item</th>${NUT.map(n=>`<th>${n[1]}<br>/1 ${"g/ml"}</th>`).join("")}<th></th></tr>`+L.map(i=>`<tr><td class="l">${esc(i.name)} <span class="hint">(${i.unit})</span></td>${NUT.map(([k])=>`<td>${fv(i[k])}</td>`).join("")}<td><button class="btn sec sm" data-e="${i.id}">Edit</button> <button class="btn dg sm" data-d="${i.id}">Delete</button></td></tr>`).join(""):`<tr><td class="empty">No items yet. Add your first one on the left.</td></tr>`;
+  $("iTable").innerHTML=L.length?`<tr><th>Item</th>${NUT.map(n=>`<th>${n[1]}<br>/1 ${"g/ml"}</th>`).join("")}<th></th></tr>`+L.map(i=>`<tr><td class="l">${esc(i.name)} <span class="hint">(${esc(i.unit)})</span></td>${NUT.map(([k])=>`<td>${fv(i[k])}</td>`).join("")}<td><button class="btn sec sm" data-e="${esc(i.id)}">Edit</button> <button class="btn dg sm" data-d="${esc(i.id)}">Delete</button></td></tr>`).join(""):`<tr><td class="empty">No items yet. Add your first one on the left.</td></tr>`;
   $("iTable").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const i=S.items.find(x=>x.id===b.dataset.e);editId=i.id;$("iName").value=i.name;$("iUnit").value=i.unit;$("iBasis").value="1";NUT.forEach(([k])=>$("n_"+k).value=fv(i[k])||"");$("itTitle").textContent="Edit item";$("iSave").textContent="Update item";$("iCancel").style.display="";scrollTo(0,0)});
   $("iTable").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ask("Delete this item? Its past records stay, using the last saved values.",()=>{S.items=S.items.filter(x=>x.id!==b.dataset.d);save();renderItems();toast("Item deleted")})});
 }
@@ -408,21 +433,21 @@ $("cSave").onclick=()=>{const name=$("cName").value.trim();if(!name)return toast
   if(cEdit)S.combos=S.combos.map(c=>c.id===cEdit?{id:cEdit,name,items:[...cSel]}:c);else S.combos.push({id:uid(),name,items:[...cSel]});
   hydrate();save();toast(cEdit?"Combo updated":"Combo saved");clearCombo();renderCombos()};
 function renderCombos(){cSel=cSel.filter(id=>S.items.some(i=>i.id===id));
-  $("cPick").innerHTML=[...S.items].filter(i=>!cSel.includes(i.id)).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${esc(i.name)} (${i.unit})</option>`).join("");
-  $("cList").innerHTML=cSel.length?cSel.map(id=>{const i=S.items.find(x=>x.id===id);return`<span class="chip">${esc(i.name)}<button data-r="${id}" title="Remove">×</button></span>`}).join(""):'<span class="hint">No ingredients added yet.</span>';
+  $("cPick").innerHTML=[...S.items].filter(i=>!cSel.includes(i.id)).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${esc(i.id)}">${esc(i.name)} (${esc(i.unit)})</option>`).join("");
+  $("cList").innerHTML=cSel.length?cSel.map(id=>{const i=S.items.find(x=>x.id===id);return`<span class="chip">${esc(i.name)}<button data-r="${esc(id)}" title="Remove">×</button></span>`}).join(""):'<span class="hint">No ingredients added yet.</span>';
   $("cList").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{cSel=cSel.filter(x=>x!==b.dataset.r);renderCombos()});
   const C=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name));
-  $("cTable").innerHTML=C.length?`<tr><th>Combo</th><th>Ingredients</th><th></th></tr>`+C.map(c=>`<tr><td class="l"><b>${esc(c.name)}</b></td><td class="l" style="white-space:normal">${c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean).map(i=>esc(i.name)).join(", ")}</td><td><button class="btn sec sm" data-ce="${c.id}">Edit</button> <button class="btn dg sm" data-cd="${c.id}">Delete</button></td></tr>`).join(""):'<tr><td class="empty">No combos yet. Build your first one on the left.</td></tr>';
+  $("cTable").innerHTML=C.length?`<tr><th>Combo</th><th>Ingredients</th><th></th></tr>`+C.map(c=>`<tr><td class="l"><b>${esc(c.name)}</b></td><td class="l" style="white-space:normal">${c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean).map(i=>esc(i.name)).join(", ")}</td><td><button class="btn sec sm" data-ce="${esc(c.id)}">Edit</button> <button class="btn dg sm" data-cd="${esc(c.id)}">Delete</button></td></tr>`).join(""):'<tr><td class="empty">No combos yet. Build your first one on the left.</td></tr>';
   $("cTable").querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{const c=S.combos.find(x=>x.id===b.dataset.ce);cEdit=c.id;cSel=c.items.filter(id=>S.items.some(i=>i.id===id));$("cName").value=c.name;$("cTitle").textContent="Edit combo";$("cSave").textContent="Update combo";$("cCancel").style.display="";renderCombos();$("cName").scrollIntoView({block:"center"})});
   $("cTable").querySelectorAll("[data-cd]").forEach(b=>b.onclick=()=>ask("Delete this combo? Records already saved with it stay.",()=>{S.combos=S.combos.filter(x=>x.id!==b.dataset.cd);if(cEdit===b.dataset.cd)clearCombo();save();renderCombos();toast("Combo deleted")}))}
 
 /* 2. log */
-function fillSel(el,withAll){const cur=el.value;el.innerHTML=(withAll?'<option value="">All items</option>':"")+[...S.items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${esc(i.name)} (${i.unit})</option>`).join("");if(cur)el.value=cur}
-function fillCombo(){const el=$("lCombo"),cur=el.value;el.innerHTML=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(cur)el.value=cur}
+function fillSel(el,withAll){const cur=el.value;el.innerHTML=(withAll?'<option value="">All items</option>':"")+[...S.items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${esc(i.id)}">${esc(i.name)} (${esc(i.unit)})</option>`).join("");if(cur)el.value=cur}
+function fillCombo(){const el=$("lCombo"),cur=el.value;el.innerHTML=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");if(cur)el.value=cur}
 function renderComboAmts(force){fillCombo();const c=S.combos.find(x=>x.id===$("lCombo").value),sig=c?c.id+":"+c.items.join(","):"";
   if(!force&&$("lComboAmts").dataset.sig===sig)return;$("lComboAmts").dataset.sig=sig;
   const L=c?c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean):[];
-  $("lComboAmts").innerHTML=L.length?L.map(it=>`<div><label>${esc(it.name)} (${it.unit})</label><input class="ca" data-id="${it.id}" type="number" min="0" step="any" placeholder="amount in ${it.unit}"></div>`).join(""):'<div class="hint" style="grid-column:span 2">No combos yet. Create one in “1. Add items”.</div>'}
+  $("lComboAmts").innerHTML=L.length?L.map(it=>`<div><label>${esc(it.name)} (${esc(it.unit)})</label><input class="ca" data-id="${esc(it.id)}" type="number" min="0" step="any" placeholder="amount in ${esc(it.unit)}"></div>`).join(""):'<div class="hint" style="grid-column:span 2">No combos yet. Create one in “1. Add items”.</div>'}
 $("lMode").onchange=()=>{const c=$("lMode").value==="combo";$("lSingle").style.display=c?"none":"";$("lComboBox").style.display=c?"":"none";if(c)renderComboAmts();calcLog()};
 $("lCombo").onchange=()=>{renderComboAmts(true);calcLog()};
 $("lComboAmts").addEventListener("input",()=>calcLog());$("lAte").oninput=calcLog;
@@ -442,9 +467,9 @@ $("lSave").onclick=()=>{const c=calcLog();if(!c)return toast("Enter an amount fi
   $("lAmt").value="";document.querySelectorAll("#lComboAmts .ca").forEach(e=>e.value="");$("lAte").value="";$("lTime").value=dtl(new Date());calcLog();renderToday();toast(cb?"Combo saved":"Saved")};
 function foodRows(D,keys,del){const seen={};let h="";
   D.forEach(l=>{if(l.gid){if(seen[l.gid])return;seen[l.gid]=1;const M=D.filter(x=>x.gid===l.gid),t=sum(M);
-    h+=`<tr class="ch"><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.combo||"Combo")} (combo)</td><td>${l.ate?`ate ${f(l.ate)} of ${f(l.tot)}`:M.length+" items"}</td>${keys.map(k=>`<td>${f(t[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-xg="${l.gid}">Delete</button></td>`:""}</tr>`;
-    h+=M.map(x=>`<tr class="cs"><td class="l tm"></td><td class="l nm">${esc(x.name)}</td><td>${f(x.amt)} ${x.unit}${x.made?` <span class="hint">(of ${f(x.made)})</span>`:""}</td>${keys.map(k=>`<td>${f(x.n[k])}</td>`).join("")}${del?'<td class="noprint"></td>':""}</tr>`).join("")}
-  else h+=`<tr><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.name)}</td><td>${f(l.amt)} ${l.unit}</td>${keys.map(k=>`<td>${f(l.n[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-x="${l.id}">Delete</button></td>`:""}</tr>`});return h}
+    h+=`<tr class="ch"><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.combo||"Combo")} (combo)</td><td>${l.ate?`ate ${f(l.ate)} of ${f(l.tot)}`:M.length+" items"}</td>${keys.map(k=>`<td>${f(t[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-xg="${esc(l.gid)}">Delete</button></td>`:""}</tr>`;
+    h+=M.map(x=>`<tr class="cs"><td class="l tm"></td><td class="l nm">${esc(x.name)}</td><td>${f(x.amt)} ${esc(x.unit)}${x.made?` <span class="hint">(of ${f(x.made)})</span>`:""}</td>${keys.map(k=>`<td>${f(x.n[k])}</td>`).join("")}${del?'<td class="noprint"></td>':""}</tr>`).join("")}
+  else h+=`<tr><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.name)}</td><td>${f(l.amt)} ${esc(l.unit)}</td>${keys.map(k=>`<td>${f(l.n[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-x="${esc(l.id)}">Delete</button></td>`:""}</tr>`});return h}
 function bindFoodDel(root,cb){root.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>ask("Delete this entry?",()=>{S.logs=S.logs.filter(l=>l.id!==b.dataset.x);save();cb();toast("Entry deleted")}));
   root.querySelectorAll("[data-xg]").forEach(b=>b.onclick=()=>ask("Delete this whole combo meal and all its items?",()=>{S.logs=S.logs.filter(l=>l.gid!==b.dataset.xg);save();cb();toast("Combo deleted")}))}
 function delEx(id,cb){ask("Delete this exercise entry?",()=>{S.ex=S.ex.filter(x=>x.id!==id);save();cb();toast("Exercise deleted")})}
@@ -457,7 +482,7 @@ $("wSave").onclick=()=>{const k=parseFloat($("wKg").value);if(!(k>0&&k<500))retu
   const t=$("wTime").value?new Date($("wTime").value):new Date();
   S.wt.push({id:uid(),ts:t.getTime(),kg:k});save();$("wKg").value="";$("wTime").value=dtl(new Date());renderWt();toast("Weight saved")};
 function renderWt(){const A=[...S.wt].sort((a,b)=>b.ts-a.ts);
-  $("wToday").innerHTML=A.length?`<table><tr><th>Date and time</th><th>Weight (kg)</th><th>Change</th><th></th></tr>${A.slice(0,6).map((x,i)=>{const p=A[i+1],c=p?x.kg-p.kg:null,d=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(d))}, ${hm(d)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td><button class="btn dg sm" data-xw="${x.id}">Delete</button></td></tr>`}).join("")}</table>`:'<div class="empty">No weight recorded yet.</div>';
+  $("wToday").innerHTML=A.length?`<table><tr><th>Date and time</th><th>Weight (kg)</th><th>Change</th><th></th></tr>${A.slice(0,6).map((x,i)=>{const p=A[i+1],c=p?x.kg-p.kg:null,d=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(d))}, ${hm(d)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td><button class="btn dg sm" data-xw="${esc(x.id)}">Delete</button></td></tr>`}).join("")}</table>`:'<div class="empty">No weight recorded yet.</div>';
   $("wToday").querySelectorAll("[data-xw]").forEach(b=>b.onclick=()=>delWt(b.dataset.xw,renderWt))}
 function renderToday(){const k=ymd(new Date()),L=S.logs.filter(l=>ymd(new Date(l.ts))===k).sort((a,b)=>a.ts-b.ts),X=S.ex.filter(x=>ymd(new Date(x.ts))===k).sort((a,b)=>a.ts-b.ts),i=info(k,L,X),t=sum(L);
   let h=L.length?`<div class="scroll"><table><tr><th>Time</th><th>Item</th><th>Amount</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th class="noprint"></th></tr>${foodRows(L,["cal","pro","carb","fat"],true)}<tr class="tot"><td colspan="3" class="l">Total</td><td>${f(t.cal)}</td><td>${f(t.pro)}</td><td>${f(t.carb)}</td><td>${f(t.fat)}</td><td></td></tr></table></div>`:'<div class="empty">No food recorded today. Use the Food and drink card above.</div>';
@@ -466,7 +491,7 @@ function renderToday(){const k=ymd(new Date()),L=S.logs.filter(l=>ymd(new Date(l
     ...(i.ok?[[f(i.allow,0),"Available (needed + exercise)",`needed ${f(i.t.needed,0)}`],[f(Math.abs(r),0),r>=0?"Deficit so far (kcal)":"Surplus so far (kcal)"],[f(i.t.goal-i.cal,0),"Goal left (kcal)",`goal ${f(i.t.goal,0)}`]]:[["-","Deficit","Set daily targets in Records"]]),
     [lw?f(lw.kg,1)+" kg":"-","Latest weight"]].map(([a,b,c])=>`<div class="st"><b>${a}</b><span>${b}</span>${c?`<br><span>${c}</span>`:""}</div>`).join("");
   $("lToday").innerHTML=h;bindFoodDel($("lToday"),renderToday);
-  $("eToday").innerHTML=X.length?`<div class="scroll"><table><tr><th>Time</th><th>Exercise today</th><th>Burned (kcal)</th><th></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td><button class="btn dg sm" data-xe="${x.id}">Delete</button></td></tr>`).join("")}</table></div>`:'<div class="empty">No exercise recorded today.</div>';
+  $("eToday").innerHTML=X.length?`<div class="scroll"><table><tr><th>Time</th><th>Exercise today</th><th>Burned (kcal)</th><th></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td><button class="btn dg sm" data-xe="${esc(x.id)}">Delete</button></td></tr>`).join("")}</table></div>`:'<div class="empty">No exercise recorded today.</div>';
   $("eToday").querySelectorAll("[data-xe]").forEach(b=>b.onclick=()=>delEx(b.dataset.xe,renderToday))}
 function renderLog(){fillSel($("lItem"));fillCombo();if($("lMode").value==="combo")renderComboAmts();if(!$("lTime").value)$("lTime").value=dtl(new Date());if(!$("eTime").value)$("eTime").value=dtl(new Date());if(!$("wTime").value)$("wTime").value=dtl(new Date());calcLog();renderToday();renderWt()}
 
@@ -504,12 +529,14 @@ $("tSave").onclick=()=>{const needed=+$("tNeed").value,goal=+$("tGoal").value,fr
 function renderTargets(){
   if(!tInit){tInit=true;$("tFrom").value=ymd(new Date());const c=tgt(ymd(new Date()))||S.targets[S.targets.length-1];if(c){$("tNeed").value=c.needed||"";$("tGoal").value=c.goal||""}}
   const T=[...S.targets].reverse();
-  $("tList").innerHTML=T.length?`<table><tr><th>Applies from</th><th>Needed (kcal)</th><th>Goal (kcal)</th><th>Planned deficit</th><th></th></tr>${T.map(x=>`<tr><td class="l">${dlong(x.from)}</td><td>${f(x.needed,0)}</td><td>${f(x.goal,0)}</td><td>${x.needed>0?f(x.needed-x.goal,0):"-"}</td><td><button class="btn dg sm" data-t="${x.from}">Delete</button></td></tr>`).join("")}</table>`:'<div class="hint">No targets set yet.</div>';
+  $("tList").innerHTML=T.length?`<table><tr><th>Applies from</th><th>Needed (kcal)</th><th>Goal (kcal)</th><th>Planned deficit</th><th></th></tr>${T.map(x=>`<tr><td class="l">${dlong(x.from)}</td><td>${f(x.needed,0)}</td><td>${f(x.goal,0)}</td><td>${x.needed>0?f(x.needed-x.goal,0):"-"}</td><td><button class="btn dg sm" data-t="${esc(x.from)}">Delete</button></td></tr>`).join("")}</table>`:'<div class="hint">No targets set yet.</div>';
   $("tList").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>ask("Delete this target? Days after it will use the previous target.",()=>{S.targets=S.targets.filter(x=>x.from!==b.dataset.t);save();renderRec()}))}
 let rTab="food";
-const openK=new Set();
-["rDays","eDays"].forEach(id=>$(id).addEventListener("toggle",e=>{const d=e.target;if(d.dataset&&d.dataset.k){if(d.open)openK.add(d.dataset.k);else openK.delete(d.dataset.k)}},true));
-document.querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{const[id,v]=b.dataset.exp.split(":");$(id).querySelectorAll("details.day").forEach(d=>{d.open=v==="1"})});
+const openK=new Set(),closedK=new Set();
+const isOpen=(k,ix)=>openK.has(k)||(ix===0&&!closedK.has(k));
+["rDays","eDays"].forEach(id=>$(id).addEventListener("click",e=>{const sm=e.target.closest("summary");if(!sm)return;const d=sm.parentElement,k=d.dataset.k;if(!k)return;
+  if(d.open){openK.delete(k);closedK.add(k)}else{closedK.delete(k);openK.add(k)}}));
+document.querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{const[id,v]=b.dataset.exp.split(":");$(id).querySelectorAll("details.day").forEach(d=>{d.open=v==="1";const k=d.dataset.k;if(v==="1"){closedK.delete(k);openK.add(k)}else{openK.delete(k);closedK.add(k)}})});
 function applyRTab(){document.querySelectorAll("#rec [data-rp]").forEach(p=>p.classList.toggle("rh",p.dataset.rp!==rTab));document.querySelectorAll("#rSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===rTab));$("rItemBox").style.display=rTab==="food"?"":"none"}
 $("rSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;rTab=b.dataset.v;applyRTab()};
 const stat=a=>a.map(([x,y,z])=>`<div class="st"><b>${x}</b><span>${y}</span>${z?`<br><span>${z}</span>`:""}</div>`).join("");
@@ -533,9 +560,9 @@ function renderRec(){
   $("rAvg").innerHTML=n?`<div class="scroll"><table><tr><th></th>${NUT.map(x=>`<th>${x[1]} (${x[2]})</th>`).join("")}</tr><tr><td class="l">Total</td>${NUT.map(([k])=>`<td>${f(T[k])}</td>`).join("")}</tr><tr><td class="l">Average per day</td>${NUT.map(([k])=>`<td>${f(T[k]/n)}</td>`).join("")}</tr></table></div><p class="hint">Calories from macros: protein ${kc?f(T.pro*4/kc*100,0):0}%, carbs ${kc?f(T.carb*4/kc*100,0):0}%, fat ${kc?f(T.fat*9/kc*100,0):0}%.</p>`:'<div class="empty">No data in this period.</div>';
   const I={};L.forEach(l=>{const o=I[l.name+"|"+l.unit]=I[l.name+"|"+l.unit]||{name:l.name,unit:l.unit,amt:0,c:0,t:0};o.amt+=l.amt;o.c+=l.n.cal;o.t++});
   const TI=Object.values(I).sort((a,b)=>b.c-a.c).slice(0,10);
-  $("rTop").innerHTML=TI.length?`<tr><th>Item</th><th>Times</th><th>Total amount</th><th>kcal</th><th>% of total</th></tr>`+TI.map(o=>`<tr><td class="l">${esc(o.name)}</td><td>${o.t}</td><td>${f(o.amt)} ${o.unit}</td><td>${f(o.c)}</td><td>${T.cal?f(o.c/T.cal*100,0):0}%</td></tr>`).join(""):`<tr><td class="empty">No data in this period.</td></tr>`;
-  $("rDays").innerHTML=n?food.slice().reverse().map(d=>{const D=G[d],t=sum(D),tg=tgt(d),goal=tg?tg.goal:0,pc=goal?Math.min(100,t.cal/goal*100):0;
-    return`<details class="card day" data-k="f${d}"${openK.has("f"+d)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(t.cal,0)} kcal${goal?` / ${f(goal,0)}`:""}</span><span class="smac">Protein ${f(t.pro)} g · Carbs ${f(t.carb)} g · Fat ${f(t.fat)} g · ${D.length} ${D.length===1?"entry":"entries"}</span>${goal?`<div class="bar"><i class="${t.cal>goal?"over":""}" style="width:${pc}%"></i></div>`:""}</summary>
+  $("rTop").innerHTML=TI.length?`<tr><th>Item</th><th>Times</th><th>Total amount</th><th>kcal</th><th>% of total</th></tr>`+TI.map(o=>`<tr><td class="l">${esc(o.name)}</td><td>${o.t}</td><td>${f(o.amt)} ${esc(o.unit)}</td><td>${f(o.c)}</td><td>${T.cal?f(o.c/T.cal*100,0):0}%</td></tr>`).join(""):`<tr><td class="empty">No data in this period.</td></tr>`;
+  $("rDays").innerHTML=n?food.slice().reverse().map((d,ix)=>{const D=G[d],t=sum(D),tg=tgt(d),goal=tg?tg.goal:0,pc=goal?Math.min(100,t.cal/goal*100):0;
+    return`<details class="card day" data-k="f${d}"${isOpen("f"+d,ix)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(t.cal,0)} kcal${goal?` / ${f(goal,0)}`:""}</span><span class="smac">Protein ${f(t.pro)} g · Carbs ${f(t.carb)} g · Fat ${f(t.fat)} g · ${D.length} ${D.length===1?"entry":"entries"}</span>${goal?`<div class="bar"><i class="${t.cal>goal?"over":""}" style="width:${pc}%"></i></div>`:""}</summary>
     <div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Item</th><th>Amount</th>${NUT.map(x=>`<th>${x[1]}</th>`).join("")}<th class="noprint"></th></tr>
     ${foodRows(D,NUT.map(n=>n[0]),true)}
     <tr class="tot"><td colspan="3" class="l">Day total</td>${NUT.map(([k])=>`<td>${f(t[k])}</td>`).join("")}<td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No food recorded in this period. Add some in the Log tab.</div>';
@@ -543,13 +570,13 @@ function renderRec(){
   /* ===== EXERCISE ===== */
   const E=filteredEx(),GE=group(E),ed=Object.keys(GE).sort().reverse();
   $("eStats").innerHTML=stat([[f(exOf(E),0),"Total burned (kcal)"],[E.length,"Sessions"],[ed.length,"Active days"],[ed.length?f(exOf(E)/ed.length,0):0,"Avg burned per active day"]]);
-  $("eDays").innerHTML=ed.length?ed.map(d=>{const X=GE[d];return`<details class="card day" data-k="e${d}"${openK.has("e"+d)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(exOf(X),0)} kcal burned</span><span class="smac">${X.length} ${X.length===1?"session":"sessions"}</span></summary><div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Exercise</th><th>Burned (kcal)</th><th class="noprint"></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td class="noprint"><button class="btn dg sm" data-xe="${x.id}">Delete</button></td></tr>`).join("")}<tr class="tot"><td colspan="2" class="l">Day total</td><td>${f(exOf(X),0)}</td><td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No exercise recorded in this period.</div>';
+  $("eDays").innerHTML=ed.length?ed.map((d,ix)=>{const X=GE[d];return`<details class="card day" data-k="e${d}"${isOpen("e"+d,ix)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(exOf(X),0)} kcal burned</span><span class="smac">${X.length} ${X.length===1?"session":"sessions"}</span></summary><div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Exercise</th><th>Burned (kcal)</th><th class="noprint"></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td class="noprint"><button class="btn dg sm" data-xe="${esc(x.id)}">Delete</button></td></tr>`).join("")}<tr class="tot"><td colspan="2" class="l">Day total</td><td>${f(exOf(X),0)}</td><td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No exercise recorded in this period.</div>';
   $("eDays").querySelectorAll("[data-xe]").forEach(b=>b.onclick=()=>delEx(b.dataset.xe,renderRec));
   /* ===== WEIGHT ===== */
   const W=filteredWt(),AW=[...S.wt].sort((a,b)=>a.ts-b.ts),pos=new Map(AW.map((x,i)=>[x.id,i])),kgs=W.map(x=>x.kg);
   $("wStats").innerHTML=W.length?stat([[f(W[W.length-1].kg,1)+" kg","Latest weight"],[W.length>1?((W[W.length-1].kg-W[0].kg)>0?"+":"")+f(W[W.length-1].kg-W[0].kg,1)+" kg":"-","Change in period","first to last weigh-in"],[f(Math.min(...kgs),1)+" kg","Lowest"],[f(Math.max(...kgs),1)+" kg","Highest"],[W.length,"Weigh-ins"]]):"";
   $("rWt").innerHTML=wChart(W);
-  $("wDays").innerHTML=W.length?`<div class="card"><h2>Weigh-ins</h2><div class="scroll"><table><tr><th>Date</th><th>Time</th><th>Weight (kg)</th><th>Change</th><th class="noprint"></th></tr>${[...W].reverse().map(x=>{const i=pos.get(x.id),pv=i>0?AW[i-1]:null,c=pv?x.kg-pv.kg:null,dd=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(dd))}</td><td>${hm(dd)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td class="noprint"><button class="btn dg sm" data-xw="${x.id}">Delete</button></td></tr>`}).join("")}</table></div></div>`:'<div class="card empty">No weight recorded in this period.</div>';
+  $("wDays").innerHTML=W.length?`<div class="card"><h2>Weigh-ins</h2><div class="scroll"><table><tr><th>Date</th><th>Time</th><th>Weight (kg)</th><th>Change</th><th class="noprint"></th></tr>${[...W].reverse().map(x=>{const i=pos.get(x.id),pv=i>0?AW[i-1]:null,c=pv?x.kg-pv.kg:null,dd=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(dd))}</td><td>${hm(dd)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td class="noprint"><button class="btn dg sm" data-xw="${esc(x.id)}">Delete</button></td></tr>`}).join("")}</table></div></div>`:'<div class="card empty">No weight recorded in this period.</div>';
   $("wDays").querySelectorAll("[data-xw]").forEach(b=>b.onclick=()=>delWt(b.dataset.xw,renderRec));
   /* ===== BALANCE (needed + exercise - eaten) ===== */
   const GA=group(filtered(true)),fd=Object.keys(GA).sort();
@@ -564,7 +591,8 @@ function renderRec(){
 
 /* downloads */
 function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast("Downloaded "+name)}
-const csv=rows=>"\ufeff"+rows.map(r=>r.map(c=>{c=String(c);return /[",\n]/.test(c)?`"${c.replace(/"/g,'""')}"`:c}).join(",")).join("\r\n");
+const csvCell=c=>{let t=String(c);if(typeof c==="string"&&/^[=+\-@\t\r]/.test(t))t="'"+t;return /[",\n]/.test(t)?`"${t.replace(/"/g,'""')}"`:t};
+const csv=rows=>"\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
 const r2=n=>Math.round((n||0)*100)/100;
 const stamp=()=>ymd(new Date());
 $("xDet").onclick=()=>{const L=filtered();dl(`entries-${stamp()}.csv`,csv([["Date","Time","Item","Amount","Unit","Combo",...NUT.map(n=>`${n[1]} (${n[2]})`)],...L.map(l=>{const d=new Date(l.ts);return[ymd(d),hm(d),l.name,l.amt,l.unit,l.combo||"",...NUT.map(([k])=>r2(l.n[k]))]})]),"text/csv")};
@@ -577,7 +605,7 @@ $("xRep").onclick=()=>{const c=document.createElement("div");c.appendChild($("rT
   const css="body{font:13px Segoe UI,Arial,sans-serif;margin:24px;color:#111}table{width:100%;border-collapse:collapse}th,td{padding:4px 6px;text-align:right;border-bottom:1px solid #ccc}th:first-child,td:first-child,.l{text-align:left}.stats{display:flex;gap:10px;flex-wrap:wrap}.st{border:1px solid #ccc;padding:8px 12px}.st b{display:block;font-size:20px}.dh{display:flex;justify-content:space-between;font-weight:700;margin-top:14px}tr.tot td{font-weight:700;background:#f5e9c8}.bar{display:none}h2{font-size:15px;margin:16px 0 6px}.card{break-inside:avoid}summary{list-style:none;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}summary::after{display:none}.sdt{font-weight:700}.ssum{font-weight:700}.smac{width:100%;color:#555;font-size:12px}details.day{border:1px solid #ccc;padding:8px;margin-top:10px;break-inside:avoid}.dbody{margin-top:6px}";
   dl(`report-${stamp()}.html`,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Calorie report</title><style>${css}</style></head><body><p style="color:#666">Open this file and press Ctrl+P to print or save as PDF.</p>${c.innerHTML}</body></html>`,"text/html")};
 $("xJson").onclick=()=>dl(`calorie-tracker-backup-${stamp()}.json`,JSON.stringify(S,null,2),"application/json");
-$("xImp").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.logs))throw 0;ask("Replace all current data with this backup?",()=>{S={items:d.items,logs:d.logs,targets:d.targets||[],ex:d.ex||[],wt:d.wt||[],combos:d.combos||[]};if(d.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:d.goal});S.del={};tInit=false;hydrate();COLS.forEach(c=>S[c].forEach(r=>r.u=Date.now()));save();allFiles().forEach(markDirty);if(cfg.token)schedule();renderItems();renderRec();toast("Backup restored")},"Yes, replace")}catch(x){toast("Not a valid backup file")}};r.readAsText(fl);e.target.value=""};
+$("xImp").onchange=e=>{const fl=e.target.files[0];if(!fl)return;if(fl.size>3e7)return toast("That file is too large");const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.logs))throw 0;ask("Replace all current data with this backup?",()=>{S=cleanState({items:d.items,logs:d.logs,targets:d.targets,ex:d.ex,wt:d.wt,combos:d.combos});if(d.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:d.goal});S.del={};tInit=false;hydrate();COLS.forEach(c=>S[c].forEach(r=>r.u=Date.now()));save();allFiles().forEach(markDirty);if(cfg.token)schedule();renderItems();renderRec();toast("Backup restored")},"Yes, replace")}catch(x){toast("Not a valid backup file")}};r.readAsText(fl);e.target.value=""};
 
 /* ---------- mobile helpers ---------- */
 const MQ=window.matchMedia?matchMedia("(max-width:700px)"):{matches:false,addEventListener(){}};
@@ -598,7 +626,7 @@ const TE=new TextEncoder(),TD=new TextDecoder();
 const b64=u=>{let t="";for(let i=0;i<u.length;i+=32768)t+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(t)};
 const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 let KEY=null,st={s:"off",msg:""},busy=false,again=false,syncT=null,lastTry=0;
-async function deriveKey(pass,salt){const km=await crypto.subtle.importKey("raw",TE.encode(pass),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function deriveKey(pass,salt,it){const km=await crypto.subtle.importKey("raw",TE.encode(pass),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:it||250000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
 async function encJ(o){const iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},KEY,TE.encode(JSON.stringify(o)));return JSON.stringify({v:1,iv:b64(iv),d:b64(new Uint8Array(ct))})}
 async function decJ(t){const o=typeof t==="string"?JSON.parse(t):t,pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(o.iv)},KEY,unb64(o.d));return JSON.parse(TD.decode(pt))}
 const fname=k=>k==="core"?"core.json":"m-"+k+".json";
@@ -611,7 +639,7 @@ async function apiErr(r){let m="";try{m=(await r.json()).message||""}catch(e){}
 async function listRemote(){const r=await api("/contents");
   if(r.status===404){let m="";try{m=(await r.json()).message||""}catch(e){}if(/empty/i.test(m))return{};throw await apiErr(r)}
   if(!r.ok)throw await apiErr(r);const o={};(await r.json()).forEach(x=>{if(x.type==="file")o[x.name]=x.sha});return o}
-async function getFile(n){const r=await api("/contents/"+n,{headers:RAW});if(!r.ok)throw await apiErr(r);return decJ(await r.text())}
+async function getFile(n){const r=await api("/contents/"+n,{headers:RAW});if(!r.ok)throw await apiErr(r);return cleanFile(await decJ(await r.text()))}
 function buildFile(key){const rec={},del={};COLS.forEach(c=>{rec[c]=S[c].filter(r=>fileOf(c,r)===key)});Object.keys(S.del).forEach(k=>{if(S.del[k].f===key)del[k]=S.del[k]});return{v:1,rec,del}}
 const isEmpty=o=>!Object.keys(o.del).length&&COLS.every(c=>!o.rec[c].length);
 function vset(o){const a=[];COLS.forEach(c=>(o.rec[c]||[]).forEach(r=>a.push(keyOf(c,r)+"@"+(r.u||0))));Object.keys(o.del||{}).forEach(k=>a.push("x"+k+"@"+o.del[k].t));return a.sort().join("|")}
@@ -620,7 +648,7 @@ function mergeInto(list){const M={};COLS.forEach(c=>{M[c]=new Map(S[c].map(r=>[k
     COLS.forEach(c=>(R.rec[c]||[]).forEach(r=>{const k=keyOf(c,r),l=M[c].get(k);if(!l||(l.u||0)<(r.u||0))M[c].set(k,r)}))});
   COLS.forEach(c=>{S[c]=[...M[c].values()].filter(r=>{const d=S.del[keyOf(c,r)];return!(d&&d.t>=(r.u||0))})})}
 function afterMerge(){S.targets.sort((a,b)=>a.from.localeCompare(b.from));hydrate();rebuildShadow();persist();renderItems();show(document.querySelector("#nav .on").dataset.t)}
-async function ensureKey(){if(KEY)return;if(!cfg.salt||!cfg.pass)throw new Error("Not connected");KEY=await deriveKey(cfg.pass,unb64(cfg.salt))}
+async function ensureKey(){if(KEY)return;if(!cfg.salt||!cfg.pass)throw new Error("Not connected");KEY=await deriveKey(cfg.pass,unb64(cfg.salt),cfg.it)}
 async function syncOnce(){
   await ensureKey();const files=await listRemote(),remotes={};
   const changed=Object.keys(files).filter(n=>FILE_RE.test(n)&&files[n]!==cfg.shas[n]);
@@ -662,7 +690,7 @@ function renderSync(){const on=!!cfg.token;$("sForm").style.display=on?"none":""
   $("sStat").innerHTML=on?`<p><b>Connected</b> to ${esc(cfg.owner)}/${esc(cfg.repo)}.</p><p>Last successful sync: ${cfg.last?esc(new Date(cfg.last).toLocaleString()):"never"}. Changes waiting: ${cfg.pend||0}.</p>${st.s==="err"?`<p style="color:var(--dg)"><b>Problem:</b> ${esc(st.msg)}</p>`:""}<p class="hint">This app syncs when you open it, when you switch back to it, and a few seconds after you save something.</p>`:`<p>This device is <b>not connected</b>. Your data is saved only in this browser. Fill in the form below to connect.</p>`}
 $("syncBadge").onclick=()=>show("sync");
 $("sNow").onclick=()=>schedule(0);
-$("sOff").onclick=()=>ask("Disconnect this device? Your data stays on this device and in GitHub.",()=>{Object.assign(cfg,{token:"",pass:"",salt:"",shas:{},dirty:[],pend:0,last:0});KEY=null;saveCfg();setSt("off");renderSync();toast("Disconnected")},"Yes, disconnect");
+$("sOff").onclick=()=>ask("Disconnect this device? Your data stays on this device and in GitHub.",()=>{Object.assign(cfg,{token:"",pass:"",salt:"",it:0,shas:{},dirty:[],pend:0,last:0});KEY=null;saveCfg();setSt("off");renderSync();toast("Disconnected")},"Yes, disconnect");
 $("sGo").onclick=async()=>{
   const owner=$("sOwner").value.trim(),repo=$("sRepo").value.trim(),token=$("sTok").value.trim(),pass=$("sPass").value,pass2=$("sPass2").value;
   if(!owner||!repo||!token||!pass)return toast("Fill in all the fields");
@@ -672,14 +700,14 @@ $("sGo").onclick=async()=>{
   try{
     const pr=await api("");if(!pr.ok)throw await apiErr(pr);
     if(!(await pr.json()).private)throw new Error("This folder is public. Make it private in its GitHub settings first.");
-    let salt;const mr=await api("/contents/meta.json",{headers:RAW});
-    if(mr.ok){const m=JSON.parse(await mr.text());salt=m.salt;KEY=await deriveKey(pass,unb64(salt));try{await decJ(m.check)}catch(e){KEY=null;throw new Error("Wrong passphrase for this data folder")}}
+    let salt,it;const mr=await api("/contents/meta.json",{headers:RAW});
+    if(mr.ok){const m=JSON.parse(await mr.text());salt=m.salt;it=m.it||250000;KEY=await deriveKey(pass,unb64(salt),it);try{await decJ(m.check)}catch(e){KEY=null;throw new Error("Wrong passphrase for this data folder")}}
     else if(mr.status===404){if(pass!==pass2)throw new Error("First time: type the same passphrase in both boxes");
-      const sb=crypto.getRandomValues(new Uint8Array(16));salt=b64(sb);KEY=await deriveKey(pass,sb);
-      const meta=JSON.stringify({v:1,salt,check:await encJ({ok:1})}),pu=await api("/contents/meta.json",{method:"PUT",body:JSON.stringify({message:"setup",content:b64(TE.encode(meta))})});
+      if(pass.length<12)throw new Error("For a new data folder, use a passphrase of at least 12 characters");it=600000;const sb=crypto.getRandomValues(new Uint8Array(16));salt=b64(sb);KEY=await deriveKey(pass,sb,it);
+      const meta=JSON.stringify({v:1,salt,it,check:await encJ({ok:1})}),pu=await api("/contents/meta.json",{method:"PUT",body:JSON.stringify({message:"setup",content:b64(TE.encode(meta))})});
       if(!pu.ok)throw await apiErr(pu)}
     else throw await apiErr(mr);
-    Object.assign(cfg,{pass,salt,dirty:allFiles(),pend:0,last:0});saveCfg();
+    Object.assign(cfg,{pass,salt,it,dirty:allFiles(),pend:0,last:0});saveCfg();
     $("sPass").value=$("sPass2").value=$("sTok").value="";toast("Connected");renderSync();sync()
   }catch(e){cfg=old;KEY=null;const msg=e instanceof TypeError?"Cannot reach GitHub (no internet?)":e.message;$("sErr").textContent=msg;setSt(cfg.token?"err":"off",msg)}};
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)trigger()});
