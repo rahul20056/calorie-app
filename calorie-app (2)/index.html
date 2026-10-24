@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#18262a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Calorie Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calories">
+<style>
+:root{--bg:#f3f7f5;--sf:#ffffff;--ink:#15302c;--mut:#5c7570;--ln:#d6e2dd;--ac:#e9a416;--acd:#9a6a00;--ac2:#0e7a6b;--dg:#c4402f;--bt:#fff;--okc:#188a4a;--tbg:#dff0ea;--tln:#0e7a6b;--ttx:#0b4f45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:20px;padding:14px 24px;border-bottom:1px solid var(--ln);background:var(--sf);box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 6%,transparent);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+h1{font:700 20px Georgia,"Times New Roman",serif;margin:0;letter-spacing:.2px}
+nav{display:flex;gap:4px;flex:1}
+nav button{background:none;border:0;padding:9px 16px;font:inherit;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;font-weight:600}
+nav button.on{color:var(--ink);border-color:var(--ac)}
+main{max-width:1400px;margin:0 auto;padding:22px 24px 60px}
+section{display:none}section.on{display:block}
+.cols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:stretch;margin-bottom:18px}
+.cols .card{margin:0}
+.low{display:grid;gap:18px;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);align-items:start}
+@media(max-width:900px){.low{grid-template-columns:1fr}}
+.fg{display:grid;gap:12px}
+.f2{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.fg .btn{width:100%;margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--ln);border-radius:14px;padding:3px 6px 3px 11px;margin:0 6px 6px 0;font-size:13px}
+.chip button{background:none;border:0;color:var(--dg);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+tr.ch td{font-weight:600;background:color-mix(in srgb,var(--ac2) 12%,transparent)}
+tr.cs td:nth-child(2){padding-left:22px}
+tr.cs td{color:var(--mut)}
+.badge{display:inline-flex;align-items:center;gap:7px;border:1.5px solid currentColor;border-radius:16px;padding:4px 13px;font:600 12.5px inherit;font-family:inherit;cursor:pointer;background:var(--sf)}
+.badge::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.badge.ok{color:var(--okc)}.badge.bad{color:var(--dg)}.badge.busy{color:var(--mut)}
+#sErr{color:var(--dg);min-height:1.4em;margin:8px 0 0}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:18px;margin-bottom:18px;box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 7%,transparent)}
+.st{box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 7%,transparent)}
+details.day{padding:0}
+details.day>summary{list-style:none;cursor:pointer;padding:14px 18px;display:grid;grid-template-columns:1fr auto 22px;gap:3px 12px;align-items:center;border-radius:10px}
+details.day>summary::-webkit-details-marker{display:none}
+details.day>summary::after{content:"";grid-column:3;grid-row:1/4;width:8px;height:8px;border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:rotate(45deg);transition:transform .15s;justify-self:center;margin-top:-4px}
+details.day[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
+details.day>summary:hover{background:color-mix(in srgb,var(--ac2) 6%,transparent)}
+.sdt{font:700 15px Georgia,serif}
+.ssum{font-weight:700;text-align:right;white-space:nowrap}
+.smac{grid-column:1/3;font-size:12.5px;color:var(--mut)}
+details.day>summary .bar{grid-column:1/3;margin-top:4px}
+details.day .dbody{padding:4px 18px 14px;border-top:1px solid var(--ln)}
+.dayctl{margin-bottom:12px}
+h2{font:700 17px Georgia,serif;margin:0 0 12px}
+label{display:block;font-size:12.5px;color:var(--mut);margin-bottom:3px;font-weight:600}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.g2{display:grid;gap:18px;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media(max-width:850px){.g2{grid-template-columns:1fr}}
+.btn{background:var(--ac2);color:var(--bt);border:0;border-radius:6px;padding:9px 16px;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;display:inline-block}
+.btn.sec{background:var(--sf);color:var(--ink);border:1px solid var(--mut)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn.dg{color:var(--dg);background:var(--sf);border:1px solid var(--dg)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:50}
+#modal.on{display:flex}
+#modal div{background:var(--sf);color:var(--ink);padding:22px;border-radius:8px;max-width:380px;border:1px solid var(--ln)}
+#modal p{margin:0 0 16px}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.row>*{flex:0 0 auto}
+.sp{flex:1!important}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--ln);white-space:nowrap}
+th:first-child,td:first-child,.l{text-align:left}
+th{font-size:12px;color:var(--mut);font-weight:600}
+.scroll{overflow-x:auto}
+tr.tot td{font-weight:700;background:var(--tbg);color:var(--ttx);border-top:2px solid var(--tln);border-bottom:0}
+.day{margin-bottom:16px}
+.dh{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;font:700 15px Georgia,serif}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:18px}
+.st{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px 14px}
+.st b{display:block;font:700 24px Georgia,serif}
+.st span{font-size:12.5px;color:var(--mut)}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ac2)}.bar i.over{background:var(--dg)}
+.pv{padding:10px 12px;background:var(--bg);border-radius:6px;margin-top:12px;font-size:13.5px;min-height:42px}
+.empty{color:var(--mut);padding:24px;text-align:center}
+.chart{display:flex;align-items:end;gap:3px;height:150px;padding-top:10px;border-bottom:1px solid var(--ln);overflow-x:auto}
+.chart div{flex:1 0 14px;max-width:48px;background:var(--ac);border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.chart div.over{background:var(--dg)}
+.lbls{display:flex;gap:3px;font-size:10.5px;color:var(--mut);overflow:hidden}
+.lbls span{flex:1 0 14px;max-width:48px;text-align:center}
+.hint{font-size:12.5px;color:var(--mut)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:3px;margin-bottom:14px}
+.seg button{flex:1;border:0;background:none;color:var(--mut);font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 6px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.mseg,#bnav{display:none}
+.rh{display:none!important}
+.pos{color:var(--okc)}.neg{color:var(--dg)}
+#rDl summary{display:none;cursor:pointer;font-weight:600;padding:2px 0}
+@media(max-width:700px){
+  body{padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+  header{padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));gap:8px;flex-wrap:nowrap}
+  h1{font-size:17px;flex:1;white-space:nowrap}
+  #nav{display:none}
+  .badge{max-width:56vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;font-size:12px;padding:5px 11px}
+  .badge::before{display:inline-block;margin-right:6px;vertical-align:middle}
+  #theme{padding:6px 9px;font-size:12px}
+  #bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
+  #bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:var(--mut);font-family:inherit;font-weight:600;font-size:11px;padding:8px 2px 7px;cursor:pointer}
+  #bnav button.on{color:var(--ac2)}
+  #bnav svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .mseg{display:flex}
+  .mh{display:none!important}
+  main{padding:12px 12px 16px}
+  .card{padding:14px;margin-bottom:12px}
+  .g2,.low,.cols{grid-template-columns:1fr;gap:12px}
+  .cols{margin-bottom:12px}
+  .stats{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .st{padding:10px 12px}.st b{font-size:20px}
+  input,select{font-size:16px;padding:11px 12px}
+  .btn{padding:12px 16px}.btn.sm{padding:9px 12px;font-size:13px}
+  #sForm .g{grid-template-columns:1fr}
+  #rec .row{gap:10px}
+  #rec .row>div{flex:1 1 calc(50% - 10px)}
+  #rec .row>.sp{display:none}
+  #rec #rPrev,#rec #rNext{flex:1 1 calc(50% - 10px)}
+  #rDl summary{display:list-item}
+  #rDl .row .btn{flex:1 1 calc(50% - 10px);text-align:center}
+  #toast{bottom:calc(80px + env(safe-area-inset-bottom));max-width:90vw;text-align:center}
+  .chart{height:120px}
+  /* tables become cards */
+  .scroll{overflow:visible}
+  table,tbody{display:block;width:100%}
+  tr.hd{display:none}
+  tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 8px;padding:10px 2px;border-bottom:1px solid var(--ln)}
+  th,td{display:block;padding:0;border:0;text-align:left;white-space:normal;min-width:0}
+  td:empty{display:none}
+  td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;color:var(--mut);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  td.l{grid-column:1/-1;font-weight:600}
+  td.tm{grid-column:span 1;font-weight:400;color:var(--mut)}
+  td.nm{grid-column:span 3}
+  td[colspan]{grid-column:1/-1}
+  td.ac{grid-column:1/-1;display:flex;gap:8px}
+  td.ac .btn{flex:1}
+  tr.tot{background:var(--tbg);border-radius:8px;border-top:2px solid var(--tln);border-bottom:0;padding:10px 8px}
+  tr.tot td{background:none;border:0}
+  details.day>summary{padding:12px 14px}
+  details.day .dbody{padding:2px 12px 12px}
+  tr.cs td.l{font-weight:400}
+}
+@media print{header,.noprint{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Calorie Tracker</h1>
+  <nav id="nav">
+    <button data-t="items">1. Add items</button>
+    <button data-t="log" class="on">2. Log intake</button>
+    <button data-t="rec">3. Records</button>
+    <button data-t="sync">4. Sync</button>
+  </nav>
+  <button class="badge bad" id="syncBadge" type="button">Not connected</button>
+  <button class="btn sec sm" id="theme">Dark / light</button>
+</header>
+<nav id="bnav" aria-label="Main">
+  <button data-t="items"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Items</button>
+  <button data-t="log" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Log</button>
+  <button data-t="rec"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Records</button>
+  <button data-t="sync"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9M4 5v4h4M4 13a8 8 0 0 0 14 4l2-2M20 19v-4h-4"/></svg>Sync</button>
+</nav>
+<main>
+
+<section id="items">
+  <div class="seg mseg"><button data-v="add" class="on">Add item</button><button data-v="saved">Saved items</button><button data-v="combo">Combos</button></div>
+  <div class="g2">
+    <div class="card" data-p="add">
+      <h2 id="itTitle">New item</h2>
+      <div class="g" style="margin-bottom:12px">
+        <div style="grid-column:span 2"><label>Item name</label><input id="iName" placeholder="Milk, Sabji, Roti…"></div>
+        <div><label>Measured in</label><select id="iUnit"><option>g</option><option>ml</option></select></div>
+        <div><label>Values entered per</label><select id="iBasis"><option value="1">1 unit</option><option value="100">100 units</option></select></div>
+      </div>
+      <div class="g" id="nutFields"></div>
+      <p class="hint">Nutrition values are saved per 1 g / 1 ml. If a pack shows values per 100 g, choose “100 units” above and they are converted for you.</p>
+      <div class="row"><button class="btn" id="iSave">Save item</button><button class="btn sec" id="iCancel" style="display:none">Cancel edit</button></div>
+    </div>
+    <div class="card" data-p="saved">
+      <div class="row"><h2 class="sp" style="margin:0">Saved items (<span id="iCount">0</span>)</h2><input id="iSearch" placeholder="Search…" style="width:160px"></div>
+      <div class="scroll" style="margin-top:10px"><table id="iTable"></table></div>
+    </div>
+  </div>
+  <div class="card" data-p="combo">
+    <h2 id="cTitle">Combos (ready-made meals from your saved items)</h2>
+    <div class="g2">
+      <div>
+        <label>Combo name</label><input id="cName" placeholder="Bhel, Sandwich, Thali…">
+        <div class="row" style="margin-top:12px"><div class="sp"><label>Add ingredient from saved items</label><select id="cPick"></select></div><button class="btn sec" id="cAdd">Add</button></div>
+        <div id="cList" style="margin:12px 0"></div>
+        <p class="hint">You enter the amount of each ingredient every time you log this combo.</p>
+        <div class="row"><button class="btn" id="cSave">Save combo</button><button class="btn sec" id="cCancel" style="display:none">Cancel edit</button></div>
+      </div>
+      <div class="scroll"><table id="cTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<section id="log" class="on">
+  <div class="stats" id="lStrip"></div>
+  <div class="seg mseg"><button data-v="food" class="on">Food</button><button data-v="ex">Exercise</button><button data-v="wt">Weight</button></div>
+  <div class="cols">
+    <div class="card" data-p="food">
+      <h2>Food and drink</h2>
+      <div class="fg">
+        <div><label>Add as</label><select id="lMode"><option value="item">Single item</option><option value="combo">Combo</option></select></div>
+        <div id="lSingle" class="fg"><div><label>Item</label><select id="lItem"></select></div>
+        <div><label>Amount (<span id="lUnit">g</span>)</label><input id="lAmt" type="number" min="0" step="any" placeholder="e.g. 250"></div></div>
+        <div id="lComboBox" class="fg" style="display:none"><div><label>Combo</label><select id="lCombo"></select></div>
+        <div id="lComboAmts" class="f2"></div>
+        <div><label>Amount of combo eaten (leave blank if you ate all of it)</label><input id="lAte" type="number" min="0" step="any" placeholder="e.g. 50"></div></div>
+        <div><label>Date and time</label><input id="lTime" type="datetime-local"></div>
+        <div class="pv" id="lPrev">Choose an item and enter an amount.</div>
+        <button class="btn" id="lSave">Save to record</button>
+      </div>
+    </div>
+    <div class="card" data-p="ex">
+      <h2>Exercise</h2>
+      <div class="fg">
+        <div><label>Exercise (optional)</label><input id="eName" placeholder="Walking, gym, cycling…"></div>
+        <div class="f2"><div><label>Calories burned (kcal)</label><input id="eKcal" type="number" min="0" step="any"></div>
+        <div><label>Date and time</label><input id="eTime" type="datetime-local"></div></div>
+        <button class="btn" id="eSave">Save exercise</button>
+      </div>
+    </div>
+    <div class="card" data-p="wt">
+      <h2>Weight</h2>
+      <div class="fg">
+        <div><label>Weight (kg)</label><input id="wKg" type="number" min="0" step="0.1" placeholder="e.g. 72.4"></div>
+        <div><label>Date and time</label><input id="wTime" type="datetime-local"></div>
+        <button class="btn" id="wSave">Save weight</button>
+      </div>
+    </div>
+  </div>
+  <div class="low">
+    <div class="card" data-p="food"><h2>Today's food</h2><div id="lToday"></div></div>
+    <div>
+      <div class="card" data-p="ex"><h2>Today's exercise</h2><div id="eToday"></div></div>
+      <div class="card" data-p="wt"><h2>Recent weight</h2><div id="wToday"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="rec">
+  <div class="card noprint">
+    <div class="row">
+      <div><label>View</label><select id="rMode"><option value="day">Day</option><option value="week">Week</option><option value="month" selected>Month</option><option value="year">Year</option><option value="all">All time</option><option value="custom">Custom range</option></select></div>
+      <div id="rAnchorBox"><label id="rAnchorL">Date</label><input id="rAnchor" type="date"></div>
+      <div id="rFromBox" style="display:none"><label>From</label><input id="rFrom" type="date"></div>
+      <div id="rToBox" style="display:none"><label>To</label><input id="rTo" type="date"></div>
+      <div id="rItemBox"><label>Item filter (food)</label><select id="rItem"></select></div>
+            <div class="sp"></div>
+      <button class="btn sec sm" id="rPrev">‹ Prev</button><button class="btn sec sm" id="rNext">Next ›</button>
+    </div>
+    <details id="rDl" open><summary>Downloads and backup</summary>
+    <div class="row" style="margin-top:12px">
+      <button class="btn sec sm" id="xDet">Download entries (CSV)</button>
+      <button class="btn sec sm" id="xDay">Download daily totals (CSV)</button>
+      <button class="btn sec sm" id="xEx">Download exercise (CSV)</button>
+      <button class="btn sec sm" id="xWt">Download weight (CSV)</button>
+      <button class="btn sec sm" id="xItems">Download items (CSV)</button>
+      <button class="btn sec sm" id="xJson">Backup everything (JSON)</button>
+      <label class="btn sec sm" style="margin:0;cursor:pointer">Restore backup<input id="xImp" type="file" accept=".json" hidden></label>
+      <button class="btn sec sm" id="xRep">Download report (print / PDF)</button>
+    </div>
+    </details>
+  </div>
+  <div class="seg noprint" id="rSeg"><button data-v="food" class="on">Food</button><button data-v="ex">Exercise</button><button data-v="wt">Weight</button><button data-v="bal">Balance</button></div>
+  <h2 id="rTitle"></h2>
+  <div data-rp="food">
+  <div class="stats" id="rStats"></div>
+  <div class="card"><h2>Calories over time</h2><div class="chart" id="rChart"></div><div class="lbls" id="rLbls"></div><p class="hint" id="rChartNote"></p></div>
+  <div class="card"><h2>Average per day logged &amp; macro split</h2><div id="rAvg"></div></div>
+  <div class="card"><h2>Top items by calories</h2><div class="scroll"><table id="rTop"></table></div></div>
+  <div class="row noprint dayctl"><button class="btn sec sm" data-exp="rDays:1">Expand all days</button><button class="btn sec sm" data-exp="rDays:0">Collapse all days</button></div><div id="rDays"></div>
+  </div>
+  <div data-rp="ex"><div class="stats" id="eStats"></div><div class="row noprint dayctl"><button class="btn sec sm" data-exp="eDays:1">Expand all days</button><button class="btn sec sm" data-exp="eDays:0">Collapse all days</button></div><div id="eDays"></div></div>
+  <div data-rp="wt"><div class="stats" id="wStats"></div><div class="card"><h2>Weight trend</h2><div id="rWt"></div></div><div id="wDays"></div></div>
+  <div data-rp="bal">
+  <div class="card noprint"><h2>Daily targets</h2>
+    <div class="row">
+      <div><label>Calories needed per day (maintenance)</label><input id="tNeed" type="number" min="0" placeholder="e.g. 2200" style="width:210px"></div>
+      <div><label>Daily calorie goal (eat up to)</label><input id="tGoal" type="number" min="0" placeholder="e.g. 1800" style="width:190px"></div>
+      <div><label>Applies from</label><input id="tFrom" type="date"></div>
+      <button class="btn" id="tSave">Save targets</button>
+    </div>
+    <p class="hint">A change applies from the chosen date onward. Earlier days keep the targets they had, so old deficits never change.</p>
+    <div class="scroll" id="tList"></div>
+  </div>
+
+  <div class="stats" id="bStats"></div><div id="bDays"></div></div>
+</section>
+<section id="sync">
+  <div class="card" style="max-width:760px"><h2>Sync status</h2><div id="sStat"></div>
+    <div class="row"><button class="btn" id="sNow">Sync now</button><button class="btn dg" id="sOff">Disconnect this device</button></div></div>
+  <div class="card" id="sForm" style="max-width:760px"><h2>Connect this device to GitHub</h2>
+    <div class="g" style="margin-bottom:12px">
+      <div><label>GitHub username</label><input id="sOwner" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+      <div><label>Private data folder name</label><input id="sRepo" value="calorie-data" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+      <div><label>Access key (token)</label><input id="sTok" type="password" autocomplete="off"></div>
+      <div><label>Passphrase (8+ characters)</label><input id="sPass" type="password" autocomplete="off"></div>
+      <div><label>Repeat passphrase (first device only)</label><input id="sPass2" type="password" autocomplete="off"></div>
+    </div>
+    <p class="hint">First device: type the passphrase twice. Every other device: type the same passphrase once. If this device already has data, it is merged with what is in GitHub, nothing is overwritten. The key and passphrase are remembered on this device only.</p>
+    <p id="sErr" role="alert"></p>
+    <button class="btn" id="sGo">Connect and sync</button>
+  </div>
+</section>
+</main>
+<div id="modal"><div><p id="mMsg"></p><div class="row"><button class="btn dg" id="mYes">Yes, delete</button><button class="btn sec" id="mNo">Cancel</button></div></div></div>
+<div id="toast"></div>
+
+<script>
+const NUT=[["cal","Calories","kcal"],["pro","Protein","g"],["carb","Carbs","g"],["fat","Fat","g"],["fib","Fiber","g"],["sug","Sugar","g"],["sod","Sodium","mg"],["ca","Calcium","mg"]];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const K="calorieTrackerV1";
+let S={items:[],logs:[],targets:[],ex:[],wt:[],combos:[]};
+try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+S.targets=S.targets||[];S.ex=S.ex||[];S.wt=S.wt||[];S.combos=S.combos||[];if(S.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:S.goal});delete S.goal;
+S.del=S.del||{};
+const COLS=["items","logs","targets","ex","wt","combos"];
+COLS.forEach(c=>S[c].forEach(r=>{if(r.u===undefined)r.u=(c==="logs"||c==="ex"||c==="wt")?(r.ts||1):1}));
+const SK=K+"sync";
+let cfg={shas:{},dirty:[],pend:0,last:0},shadow={};
+try{const r=localStorage.getItem(SK);if(r)cfg=Object.assign(cfg,JSON.parse(r))}catch(e){}
+const saveCfg=()=>{try{localStorage.setItem(SK,JSON.stringify(cfg))}catch(e){}};
+const keyOf=(c,r)=>c+":"+(c==="targets"?r.from:r.id);
+const fileOf=(c,r)=>(c==="logs"||c==="ex"||c==="wt")?new Date(r.ts).toISOString().slice(0,7):"core";
+function sigOf(c,r){const o=Object.assign({},r);delete o.u;if(c==="logs"){delete o.n;delete o.name;delete o.unit;delete o.combo}return JSON.stringify(o,Object.keys(o).sort())}
+function rebuildShadow(){shadow={};COLS.forEach(c=>S[c].forEach(r=>{shadow[keyOf(c,r)]={sig:sigOf(c,r),file:fileOf(c,r)}}))}
+function markDirty(f){if(!cfg.dirty.includes(f)){cfg.dirty.push(f);saveCfg()}}
+function allFiles(){const o=new Set();COLS.forEach(c=>S[c].forEach(r=>o.add(fileOf(c,r))));return[...o]}
+function detect(){const now=Date.now();let n=0;const seen={};
+  COLS.forEach(c=>S[c].forEach(r=>{const k=keyOf(c,r),sg=sigOf(c,r),sh=shadow[k],f=fileOf(c,r);seen[k]=1;
+    if(!sh||sh.sig!==sg){r.u=Math.max(now,(r.u||0)+1);shadow[k]={sig:sg,file:f};markDirty(f);n++}}));
+  Object.keys(shadow).forEach(k=>{if(!seen[k]){const f=shadow[k].file;S.del[k]={t:now,f};markDirty(f);delete shadow[k];n++}});
+  return n}
+function persist(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast("Could not save in this browser")}}
+const save=()=>{const n=detect();persist();if(n){cfg.pend=(cfg.pend||0)+n;saveCfg();if(cfg.token)schedule()}};
+rebuildShadow();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("on"),2200)}
+const f=(n,d=1)=>(+n||0).toLocaleString(undefined,{maximumFractionDigits:d});
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const dtl=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const pd=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
+const hm=d=>d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+const dlong=s=>pd(s).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+
+function ask(msg,yes,label){$("mMsg").textContent=msg;$("mYes").textContent=label||"Yes, delete";$("modal").classList.add("on");$("mYes").onclick=()=>{$("modal").classList.remove("on");yes()};$("mNo").onclick=()=>$("modal").classList.remove("on")}
+/* keep logs in sync with item details */
+function hydrate(){S.logs.forEach(l=>{const cb=l.cid&&S.combos.find(c=>c.id===l.cid);if(cb)l.combo=cb.name;const it=S.items.find(i=>i.id===l.itemId);if(!it)return;l.name=it.name;l.unit=it.unit;l.n={};NUT.forEach(([k])=>l.n[k]=(it[k]||0)*l.amt)})}
+hydrate();
+/* tabs */
+document.querySelectorAll("#nav button,#bnav button").forEach(b=>b.onclick=()=>show(b.dataset.t));
+function show(t){document.querySelectorAll("#nav button,#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===t));if(t==="log")renderLog();if(t==="rec")renderRec();if(t==="sync")renderSync();applySeg();if(MQ.matches)window.scrollTo(0,0)}
+$("theme").onclick=()=>{const r=document.documentElement,d=matchMedia("(prefers-color-scheme:dark)").matches;const cur=r.dataset.theme||(d?"dark":"light");r.dataset.theme=cur==="dark"?"light":"dark";try{localStorage.setItem(K+"t",r.dataset.theme)}catch(e){}};
+try{const t=localStorage.getItem(K+"t");if(t)document.documentElement.dataset.theme=t}catch(e){}
+
+/* 1. items */
+$("nutFields").innerHTML=NUT.map(([k,l,u])=>`<div><label>${l} (${u})</label><input id="n_${k}" type="number" min="0" step="any" placeholder="0"></div>`).join("");
+let editId=null;
+const fv=n=>n?+(+n).toPrecision(3):0;
+function clearItem(){editId=null;["iName",...NUT.map(n=>"n_"+n[0])].forEach(i=>$(i).value="");$("iBasis").value="1";$("itTitle").textContent="New item";$("iSave").textContent="Save item";$("iCancel").style.display="none"}
+$("iCancel").onclick=clearItem;
+$("iSave").onclick=()=>{
+  const name=$("iName").value.trim();if(!name)return toast("Enter an item name");
+  const b=+$("iBasis").value,it={id:editId||uid(),name,unit:$("iUnit").value};
+  NUT.forEach(([k])=>it[k]=(parseFloat($("n_"+k).value)||0)/b);
+  if(editId){S.items=S.items.map(x=>x.id===editId?it:x)}else{
+    if(S.items.some(x=>x.name.toLowerCase()===name.toLowerCase()&&x.unit===it.unit))return toast("This item already exists");
+    S.items.push(it)}
+  hydrate();save();toast(editId?"Item updated. Past records recalculated":"Item saved");clearItem();renderItems()};
+function renderItems(){renderCombos();
+  const q=$("iSearch").value.toLowerCase(),L=S.items.filter(i=>i.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  $("iCount").textContent=S.items.length;
+  $("iTable").innerHTML=L.length?`<tr><th>Item</th>${NUT.map(n=>`<th>${n[1]}<br>/1 ${"g/ml"}</th>`).join("")}<th></th></tr>`+L.map(i=>`<tr><td class="l">${esc(i.name)} <span class="hint">(${i.unit})</span></td>${NUT.map(([k])=>`<td>${fv(i[k])}</td>`).join("")}<td><button class="btn sec sm" data-e="${i.id}">Edit</button> <button class="btn dg sm" data-d="${i.id}">Delete</button></td></tr>`).join(""):`<tr><td class="empty">No items yet. Add your first one on the left.</td></tr>`;
+  $("iTable").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const i=S.items.find(x=>x.id===b.dataset.e);editId=i.id;$("iName").value=i.name;$("iUnit").value=i.unit;$("iBasis").value="1";NUT.forEach(([k])=>$("n_"+k).value=fv(i[k])||"");$("itTitle").textContent="Edit item";$("iSave").textContent="Update item";$("iCancel").style.display="";scrollTo(0,0)});
+  $("iTable").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ask("Delete this item? Its past records stay, using the last saved values.",()=>{S.items=S.items.filter(x=>x.id!==b.dataset.d);save();renderItems();toast("Item deleted")})});
+}
+$("iSearch").oninput=renderItems;
+let cSel=[],cEdit=null;
+function clearCombo(){cSel=[];cEdit=null;$("cName").value="";$("cTitle").textContent="Combos (ready-made meals from your saved items)";$("cSave").textContent="Save combo";$("cCancel").style.display="none"}
+$("cCancel").onclick=()=>{clearCombo();renderCombos()};
+$("cAdd").onclick=()=>{const v=$("cPick").value;if(!v)return toast("Add some items first");if(!cSel.includes(v))cSel.push(v);renderCombos()};
+$("cSave").onclick=()=>{const name=$("cName").value.trim();if(!name)return toast("Enter a combo name");if(!cSel.length)return toast("Add at least one ingredient");
+  if(S.combos.some(c=>c.id!==cEdit&&c.name.toLowerCase()===name.toLowerCase()))return toast("A combo with this name already exists");
+  if(cEdit)S.combos=S.combos.map(c=>c.id===cEdit?{id:cEdit,name,items:[...cSel]}:c);else S.combos.push({id:uid(),name,items:[...cSel]});
+  hydrate();save();toast(cEdit?"Combo updated":"Combo saved");clearCombo();renderCombos()};
+function renderCombos(){cSel=cSel.filter(id=>S.items.some(i=>i.id===id));
+  $("cPick").innerHTML=[...S.items].filter(i=>!cSel.includes(i.id)).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${esc(i.name)} (${i.unit})</option>`).join("");
+  $("cList").innerHTML=cSel.length?cSel.map(id=>{const i=S.items.find(x=>x.id===id);return`<span class="chip">${esc(i.name)}<button data-r="${id}" title="Remove">×</button></span>`}).join(""):'<span class="hint">No ingredients added yet.</span>';
+  $("cList").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{cSel=cSel.filter(x=>x!==b.dataset.r);renderCombos()});
+  const C=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name));
+  $("cTable").innerHTML=C.length?`<tr><th>Combo</th><th>Ingredients</th><th></th></tr>`+C.map(c=>`<tr><td class="l"><b>${esc(c.name)}</b></td><td class="l" style="white-space:normal">${c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean).map(i=>esc(i.name)).join(", ")}</td><td><button class="btn sec sm" data-ce="${c.id}">Edit</button> <button class="btn dg sm" data-cd="${c.id}">Delete</button></td></tr>`).join(""):'<tr><td class="empty">No combos yet. Build your first one on the left.</td></tr>';
+  $("cTable").querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{const c=S.combos.find(x=>x.id===b.dataset.ce);cEdit=c.id;cSel=c.items.filter(id=>S.items.some(i=>i.id===id));$("cName").value=c.name;$("cTitle").textContent="Edit combo";$("cSave").textContent="Update combo";$("cCancel").style.display="";renderCombos();$("cName").scrollIntoView({block:"center"})});
+  $("cTable").querySelectorAll("[data-cd]").forEach(b=>b.onclick=()=>ask("Delete this combo? Records already saved with it stay.",()=>{S.combos=S.combos.filter(x=>x.id!==b.dataset.cd);if(cEdit===b.dataset.cd)clearCombo();save();renderCombos();toast("Combo deleted")}))}
+
+/* 2. log */
+function fillSel(el,withAll){const cur=el.value;el.innerHTML=(withAll?'<option value="">All items</option>':"")+[...S.items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${esc(i.name)} (${i.unit})</option>`).join("");if(cur)el.value=cur}
+function fillCombo(){const el=$("lCombo"),cur=el.value;el.innerHTML=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(cur)el.value=cur}
+function renderComboAmts(force){fillCombo();const c=S.combos.find(x=>x.id===$("lCombo").value),sig=c?c.id+":"+c.items.join(","):"";
+  if(!force&&$("lComboAmts").dataset.sig===sig)return;$("lComboAmts").dataset.sig=sig;
+  const L=c?c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean):[];
+  $("lComboAmts").innerHTML=L.length?L.map(it=>`<div><label>${esc(it.name)} (${it.unit})</label><input class="ca" data-id="${it.id}" type="number" min="0" step="any" placeholder="amount in ${it.unit}"></div>`).join(""):'<div class="hint" style="grid-column:span 2">No combos yet. Create one in “1. Add items”.</div>'}
+$("lMode").onchange=()=>{const c=$("lMode").value==="combo";$("lSingle").style.display=c?"none":"";$("lComboBox").style.display=c?"":"none";if(c)renderComboAmts();calcLog()};
+$("lCombo").onchange=()=>{renderComboAmts(true);calcLog()};
+$("lComboAmts").addEventListener("input",()=>calcLog());$("lAte").oninput=calcLog;
+function calcLog(){const rows=[],cm=$("lMode").value==="combo";let total=0,ate=0,ratio=1;
+  if(cm)document.querySelectorAll("#lComboAmts .ca").forEach(e=>{const a=parseFloat(e.value),it=S.items.find(i=>i.id===e.dataset.id);if(it&&a>0)rows.push({it,a})});
+  else{const it=S.items.find(i=>i.id===$("lItem").value),a=parseFloat($("lAmt").value);$("lUnit").textContent=it?it.unit:"g";if(it&&a>0)rows.push({it,a})}
+  if(!rows.length){$("lPrev").textContent=cm?"Enter the amount of each ingredient used to make the combo.":(S.items.length?"Choose an item and enter an amount.":"Add an item first in “1. Add items”.");return null}
+  if(cm){total=rows.reduce((x,r)=>x+r.a,0);ate=parseFloat($("lAte").value)||0;
+    if(ate>total+1e-9){$("lPrev").textContent=`The amount eaten (${f(ate)}) is more than the total made (${f(total)}). Please check.`;return null}
+    ratio=ate>0?ate/total:1;if(!(ate>0))ate=total;rows.forEach(r=>{r.made=r.a;r.a=r.a*ratio})}
+  rows.forEach(r=>{r.n={};NUT.forEach(([k])=>r.n[k]=(r.it[k]||0)*r.a)});const t=sum(rows);
+  $("lPrev").innerHTML=(cm?`<b>Ate ${f(ate)} of ${f(total)} made (${f(ratio*100,0)}% of the combo)</b><br>`:"")+NUT.map(([k,l,u])=>`<b>${l}</b> ${f(t[k])} ${u}`).join(" &nbsp;|&nbsp; ");return{rows,t,ate,total}}
+$("lItem").onchange=$("lAmt").oninput=calcLog;
+$("lSave").onclick=()=>{const c=calcLog();if(!c)return toast("Enter an amount first");
+  const t=$("lTime").value?new Date($("lTime").value):new Date(),cb=$("lMode").value==="combo"?S.combos.find(x=>x.id===$("lCombo").value):null,gid=cb?uid():null;
+  c.rows.forEach(r=>S.logs.push({id:uid(),itemId:r.it.id,name:r.it.name,unit:r.it.unit,amt:r.a,ts:t.getTime(),n:r.n,...(cb?{gid,cid:cb.id,combo:cb.name,tot:c.total,ate:c.ate,made:r.made}:{})}));save();
+  $("lAmt").value="";document.querySelectorAll("#lComboAmts .ca").forEach(e=>e.value="");$("lAte").value="";$("lTime").value=dtl(new Date());calcLog();renderToday();toast(cb?"Combo saved":"Saved")};
+function foodRows(D,keys,del){const seen={};let h="";
+  D.forEach(l=>{if(l.gid){if(seen[l.gid])return;seen[l.gid]=1;const M=D.filter(x=>x.gid===l.gid),t=sum(M);
+    h+=`<tr class="ch"><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.combo||"Combo")} (combo)</td><td>${l.ate?`ate ${f(l.ate)} of ${f(l.tot)}`:M.length+" items"}</td>${keys.map(k=>`<td>${f(t[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-xg="${l.gid}">Delete</button></td>`:""}</tr>`;
+    h+=M.map(x=>`<tr class="cs"><td class="l tm"></td><td class="l nm">${esc(x.name)}</td><td>${f(x.amt)} ${x.unit}${x.made?` <span class="hint">(of ${f(x.made)})</span>`:""}</td>${keys.map(k=>`<td>${f(x.n[k])}</td>`).join("")}${del?'<td class="noprint"></td>':""}</tr>`).join("")}
+  else h+=`<tr><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.name)}</td><td>${f(l.amt)} ${l.unit}</td>${keys.map(k=>`<td>${f(l.n[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-x="${l.id}">Delete</button></td>`:""}</tr>`});return h}
+function bindFoodDel(root,cb){root.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>ask("Delete this entry?",()=>{S.logs=S.logs.filter(l=>l.id!==b.dataset.x);save();cb();toast("Entry deleted")}));
+  root.querySelectorAll("[data-xg]").forEach(b=>b.onclick=()=>ask("Delete this whole combo meal and all its items?",()=>{S.logs=S.logs.filter(l=>l.gid!==b.dataset.xg);save();cb();toast("Combo deleted")}))}
+function delEx(id,cb){ask("Delete this exercise entry?",()=>{S.ex=S.ex.filter(x=>x.id!==id);save();cb();toast("Exercise deleted")})}
+$("eSave").onclick=()=>{const k=parseFloat($("eKcal").value);if(!(k>0))return toast("Enter the calories burned");
+  const t=$("eTime").value?new Date($("eTime").value):new Date();
+  S.ex.push({id:uid(),ts:t.getTime(),name:$("eName").value.trim()||"Exercise",kcal:k});save();
+  $("eKcal").value="";$("eName").value="";$("eTime").value=dtl(new Date());renderToday();toast("Exercise saved")};
+function delWt(id,cb){ask("Delete this weight entry?",()=>{S.wt=S.wt.filter(x=>x.id!==id);save();cb();toast("Weight deleted")})}
+$("wSave").onclick=()=>{const k=parseFloat($("wKg").value);if(!(k>0&&k<500))return toast("Enter your weight in kg");
+  const t=$("wTime").value?new Date($("wTime").value):new Date();
+  S.wt.push({id:uid(),ts:t.getTime(),kg:k});save();$("wKg").value="";$("wTime").value=dtl(new Date());renderWt();toast("Weight saved")};
+function renderWt(){const A=[...S.wt].sort((a,b)=>b.ts-a.ts);
+  $("wToday").innerHTML=A.length?`<table><tr><th>Date and time</th><th>Weight (kg)</th><th>Change</th><th></th></tr>${A.slice(0,6).map((x,i)=>{const p=A[i+1],c=p?x.kg-p.kg:null,d=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(d))}, ${hm(d)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td><button class="btn dg sm" data-xw="${x.id}">Delete</button></td></tr>`}).join("")}</table>`:'<div class="empty">No weight recorded yet.</div>';
+  $("wToday").querySelectorAll("[data-xw]").forEach(b=>b.onclick=()=>delWt(b.dataset.xw,renderWt))}
+function renderToday(){const k=ymd(new Date()),L=S.logs.filter(l=>ymd(new Date(l.ts))===k).sort((a,b)=>a.ts-b.ts),X=S.ex.filter(x=>ymd(new Date(x.ts))===k).sort((a,b)=>a.ts-b.ts),i=info(k,L,X),t=sum(L);
+  let h=L.length?`<div class="scroll"><table><tr><th>Time</th><th>Item</th><th>Amount</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th class="noprint"></th></tr>${foodRows(L,["cal","pro","carb","fat"],true)}<tr class="tot"><td colspan="3" class="l">Total</td><td>${f(t.cal)}</td><td>${f(t.pro)}</td><td>${f(t.carb)}</td><td>${f(t.fat)}</td><td></td></tr></table></div>`:'<div class="empty">No food recorded today. Use the Food and drink card above.</div>';
+  const lw=[...S.wt].sort((a,b)=>b.ts-a.ts)[0],r=i.allow-i.cal;
+  $("lStrip").innerHTML=[[f(i.cal,0),"Eaten today (kcal)"],[f(i.burn,0),"Exercise burned (kcal)"],
+    ...(i.ok?[[f(i.allow,0),"Available (needed + exercise)",`needed ${f(i.t.needed,0)}`],[f(Math.abs(r),0),r>=0?"Deficit so far (kcal)":"Surplus so far (kcal)"],[f(i.t.goal-i.cal,0),"Goal left (kcal)",`goal ${f(i.t.goal,0)}`]]:[["-","Deficit","Set daily targets in Records"]]),
+    [lw?f(lw.kg,1)+" kg":"-","Latest weight"]].map(([a,b,c])=>`<div class="st"><b>${a}</b><span>${b}</span>${c?`<br><span>${c}</span>`:""}</div>`).join("");
+  $("lToday").innerHTML=h;bindFoodDel($("lToday"),renderToday);
+  $("eToday").innerHTML=X.length?`<div class="scroll"><table><tr><th>Time</th><th>Exercise today</th><th>Burned (kcal)</th><th></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td><button class="btn dg sm" data-xe="${x.id}">Delete</button></td></tr>`).join("")}</table></div>`:'<div class="empty">No exercise recorded today.</div>';
+  $("eToday").querySelectorAll("[data-xe]").forEach(b=>b.onclick=()=>delEx(b.dataset.xe,renderToday))}
+function renderLog(){fillSel($("lItem"));fillCombo();if($("lMode").value==="combo")renderComboAmts();if(!$("lTime").value)$("lTime").value=dtl(new Date());if(!$("eTime").value)$("eTime").value=dtl(new Date());if(!$("wTime").value)$("wTime").value=dtl(new Date());calcLog();renderToday();renderWt()}
+
+/* 3. records */
+const sum=L=>{const t={};NUT.forEach(([k])=>t[k]=0);L.forEach(l=>NUT.forEach(([k])=>t[k]+=l.n[k]||0));return t};
+const tgt=d=>{let t=null;S.targets.forEach(x=>{if(x.from<=d)t=x});return t||S.targets[0]||null};
+const exOf=L=>L.reduce((a,e)=>a+e.kcal,0);
+function info(d,F,X){const t=tgt(d),cal=sum(F||[]).cal,burn=exOf(X||[]),ok=!!(t&&t.needed>0);return{t,cal,burn,ok,allow:ok?t.needed+burn:0,def:ok&&F&&F.length?t.needed+burn-cal:null}}
+$("rAnchor").value=ymd(new Date());
+["rMode","rAnchor","rFrom","rTo","rItem"].forEach(i=>$(i).onchange=renderRec);
+$("rPrev").onclick=()=>step(-1);$("rNext").onclick=()=>step(1);
+function step(d){const m=$("rMode").value,a=pd($("rAnchor").value);
+  if(m==="day")a.setDate(a.getDate()+d);else if(m==="week")a.setDate(a.getDate()+7*d);else if(m==="month")a.setMonth(a.getMonth()+d);else if(m==="year")a.setFullYear(a.getFullYear()+d);else return;
+  $("rAnchor").value=ymd(a);renderRec()}
+function range(){const m=$("rMode").value,a=pd($("rAnchor").value||ymd(new Date()));let s,e;
+  if(m==="day"){s=e=a}else if(m==="week"){const w=(a.getDay()+6)%7;s=new Date(a);s.setDate(a.getDate()-w);e=new Date(s);e.setDate(s.getDate()+6)}
+  else if(m==="month"){s=new Date(a.getFullYear(),a.getMonth(),1);e=new Date(a.getFullYear(),a.getMonth()+1,0)}
+  else if(m==="year"){s=new Date(a.getFullYear(),0,1);e=new Date(a.getFullYear(),11,31)}
+  else if(m==="custom"){s=$("rFrom").value?pd($("rFrom").value):new Date(2000,0,1);e=$("rTo").value?pd($("rTo").value):new Date()}
+  else{s=new Date(2000,0,1);e=new Date(2100,0,1)}
+  return[ymd(s),ymd(e),m]}
+function filtered(all){const[s,e]=range(),it=all?"":$("rItem").value;return S.logs.filter(l=>{const d=ymd(new Date(l.ts));return d>=s&&d<=e&&(!it||l.itemId===it)}).sort((a,b)=>a.ts-b.ts)}
+function filteredEx(){const[s,e]=range();return S.ex.filter(x=>{const d=ymd(new Date(x.ts));return d>=s&&d<=e}).sort((a,b)=>a.ts-b.ts)}
+function filteredWt(){const[s,e]=range();return S.wt.filter(x=>{const d=ymd(new Date(x.ts));return d>=s&&d<=e}).sort((a,b)=>a.ts-b.ts)}
+function wChart(W){if(W.length<2)return`<div class="hint">${W.length?"Only one weigh-in in this period. Add more to see a trend.":"No weight entries in this period."}</div>`;
+  const w=640,h=180,p=34,xs=W.map(x=>x.ts),ys=W.map(x=>x.kg),x0=Math.min(...xs),x1=Math.max(...xs),lo=Math.min(...ys)-.5,hi=Math.max(...ys)+.5,
+  X=t=>p+(x1===x0?0:(t-x0)/(x1-x0))*(w-2*p),Y=v=>h-p-(v-lo)/(hi-lo)*(h-2*p),tx=`font-size="11" fill="var(--mut)"`;
+  return`<svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:${w}px;height:auto"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="var(--ln)"/><polyline fill="none" stroke="var(--ac2)" stroke-width="2" points="${W.map(x=>X(x.ts)+","+Y(x.kg)).join(" ")}"/>${W.map(x=>`<circle cx="${X(x.ts)}" cy="${Y(x.kg)}" r="3.5" fill="var(--ac)"><title>${ymd(new Date(x.ts))}: ${f(x.kg,1)} kg</title></circle>`).join("")}<text x="2" y="${Y(hi)+10}" ${tx}>${f(hi,1)}</text><text x="2" y="${Y(lo)}" ${tx}>${f(lo,1)}</text><text x="${p}" y="${h-10}" ${tx}>${ymd(new Date(x0))}</text><text x="${w-p}" y="${h-10}" text-anchor="end" ${tx}>${ymd(new Date(x1))}</text></svg>`}
+function group(L){const g={};L.forEach(l=>{const k=ymd(new Date(l.ts));(g[k]=g[k]||[]).push(l)});return g}
+/* targets */
+let tInit=false;
+$("tSave").onclick=()=>{const needed=+$("tNeed").value,goal=+$("tGoal").value,from=$("tFrom").value;
+  if(!(needed>0)||!(goal>0)||!from)return toast("Enter calories needed, goal and a start date");
+  S.targets=S.targets.filter(x=>x.from!==from);S.targets.push({from,needed,goal});S.targets.sort((a,b)=>a.from.localeCompare(b.from));save();toast("Targets saved from "+from);renderRec()};
+function renderTargets(){
+  if(!tInit){tInit=true;$("tFrom").value=ymd(new Date());const c=tgt(ymd(new Date()))||S.targets[S.targets.length-1];if(c){$("tNeed").value=c.needed||"";$("tGoal").value=c.goal||""}}
+  const T=[...S.targets].reverse();
+  $("tList").innerHTML=T.length?`<table><tr><th>Applies from</th><th>Needed (kcal)</th><th>Goal (kcal)</th><th>Planned deficit</th><th></th></tr>${T.map(x=>`<tr><td class="l">${dlong(x.from)}</td><td>${f(x.needed,0)}</td><td>${f(x.goal,0)}</td><td>${x.needed>0?f(x.needed-x.goal,0):"-"}</td><td><button class="btn dg sm" data-t="${x.from}">Delete</button></td></tr>`).join("")}</table>`:'<div class="hint">No targets set yet.</div>';
+  $("tList").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>ask("Delete this target? Days after it will use the previous target.",()=>{S.targets=S.targets.filter(x=>x.from!==b.dataset.t);save();renderRec()}))}
+let rTab="food";
+const openK=new Set();
+["rDays","eDays"].forEach(id=>$(id).addEventListener("toggle",e=>{const d=e.target;if(d.dataset&&d.dataset.k){if(d.open)openK.add(d.dataset.k);else openK.delete(d.dataset.k)}},true));
+document.querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{const[id,v]=b.dataset.exp.split(":");$(id).querySelectorAll("details.day").forEach(d=>{d.open=v==="1"})});
+function applyRTab(){document.querySelectorAll("#rec [data-rp]").forEach(p=>p.classList.toggle("rh",p.dataset.rp!==rTab));document.querySelectorAll("#rSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===rTab));$("rItemBox").style.display=rTab==="food"?"":"none"}
+$("rSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;rTab=b.dataset.v;applyRTab()};
+const stat=a=>a.map(([x,y,z])=>`<div class="st"><b>${x}</b><span>${y}</span>${z?`<br><span>${z}</span>`:""}</div>`).join("");
+function renderRec(){
+  fillSel($("rItem"),true);renderTargets();const m=$("rMode").value;
+  $("rAnchorBox").style.display=m==="custom"||m==="all"?"none":"";$("rFromBox").style.display=$("rToBox").style.display=m==="custom"?"":"none";
+  $("rAnchorL").textContent=m==="month"?"Any date in month":m==="year"?"Any date in year":m==="week"?"Any date in week":"Date";
+  const[s,e]=range();$("rTitle").textContent=m==="all"?"All time":m==="day"?dlong(s):`${dlong(s)}  to  ${dlong(e)}`;
+  applyRTab();
+  /* ===== FOOD ===== */
+  const L=filtered(),G=group(L),food=Object.keys(G).sort(),T=sum(L),n=food.length;
+  $("rStats").innerHTML=stat([[f(T.cal,0),"Total kcal eaten"],[n?f(T.cal/n,0):0,"Avg kcal per day"],[f(T.pro)+" g","Total protein"],[f(T.carb)+" g","Total carbs"],[f(T.fat)+" g","Total fat"],[n,"Days logged"],[L.length,"Food entries"]]);
+  const byMonth=n>62;let bars=[];
+  if(byMonth){const M={};food.forEach(d=>{(M[d.slice(0,7)]=M[d.slice(0,7)]||[]).push(sum(G[d]).cal)});bars=Object.keys(M).sort().map(k=>({k,l:k.slice(5),v:M[k].reduce((a,b)=>a+b,0)/M[k].length,over:false}))}
+  else bars=food.map(d=>{const t=tgt(d),v=sum(G[d]).cal;return{k:d,l:d.slice(8),v,over:!!(t&&t.goal&&v>t.goal)}});
+  const mx=Math.max(1,...bars.map(b=>b.v));
+  $("rChart").innerHTML=bars.map(b=>`<div class="${b.over?"over":""}" style="height:${b.v/mx*100}%" title="${b.k}: ${f(b.v,0)} kcal"></div>`).join("");
+  $("rLbls").innerHTML=bars.map(b=>`<span>${b.l}</span>`).join("");
+  $("rChartNote").textContent=bars.length?(byMonth?"Average kcal per logged day, by month.":"Kcal eaten per day. Red bars are above that day's goal."):"No data in this period.";
+  const kc=T.pro*4+T.carb*4+T.fat*9;
+  $("rAvg").innerHTML=n?`<div class="scroll"><table><tr><th></th>${NUT.map(x=>`<th>${x[1]} (${x[2]})</th>`).join("")}</tr><tr><td class="l">Total</td>${NUT.map(([k])=>`<td>${f(T[k])}</td>`).join("")}</tr><tr><td class="l">Average per day</td>${NUT.map(([k])=>`<td>${f(T[k]/n)}</td>`).join("")}</tr></table></div><p class="hint">Calories from macros: protein ${kc?f(T.pro*4/kc*100,0):0}%, carbs ${kc?f(T.carb*4/kc*100,0):0}%, fat ${kc?f(T.fat*9/kc*100,0):0}%.</p>`:'<div class="empty">No data in this period.</div>';
+  const I={};L.forEach(l=>{const o=I[l.name+"|"+l.unit]=I[l.name+"|"+l.unit]||{name:l.name,unit:l.unit,amt:0,c:0,t:0};o.amt+=l.amt;o.c+=l.n.cal;o.t++});
+  const TI=Object.values(I).sort((a,b)=>b.c-a.c).slice(0,10);
+  $("rTop").innerHTML=TI.length?`<tr><th>Item</th><th>Times</th><th>Total amount</th><th>kcal</th><th>% of total</th></tr>`+TI.map(o=>`<tr><td class="l">${esc(o.name)}</td><td>${o.t}</td><td>${f(o.amt)} ${o.unit}</td><td>${f(o.c)}</td><td>${T.cal?f(o.c/T.cal*100,0):0}%</td></tr>`).join(""):`<tr><td class="empty">No data in this period.</td></tr>`;
+  $("rDays").innerHTML=n?food.slice().reverse().map(d=>{const D=G[d],t=sum(D),tg=tgt(d),goal=tg?tg.goal:0,pc=goal?Math.min(100,t.cal/goal*100):0;
+    return`<details class="card day" data-k="f${d}"${openK.has("f"+d)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(t.cal,0)} kcal${goal?` / ${f(goal,0)}`:""}</span><span class="smac">Protein ${f(t.pro)} g · Carbs ${f(t.carb)} g · Fat ${f(t.fat)} g · ${D.length} ${D.length===1?"entry":"entries"}</span>${goal?`<div class="bar"><i class="${t.cal>goal?"over":""}" style="width:${pc}%"></i></div>`:""}</summary>
+    <div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Item</th><th>Amount</th>${NUT.map(x=>`<th>${x[1]}</th>`).join("")}<th class="noprint"></th></tr>
+    ${foodRows(D,NUT.map(n=>n[0]),true)}
+    <tr class="tot"><td colspan="3" class="l">Day total</td>${NUT.map(([k])=>`<td>${f(t[k])}</td>`).join("")}<td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No food recorded in this period. Add some in the Log tab.</div>';
+  bindFoodDel($("rDays"),renderRec);
+  /* ===== EXERCISE ===== */
+  const E=filteredEx(),GE=group(E),ed=Object.keys(GE).sort().reverse();
+  $("eStats").innerHTML=stat([[f(exOf(E),0),"Total burned (kcal)"],[E.length,"Sessions"],[ed.length,"Active days"],[ed.length?f(exOf(E)/ed.length,0):0,"Avg burned per active day"]]);
+  $("eDays").innerHTML=ed.length?ed.map(d=>{const X=GE[d];return`<details class="card day" data-k="e${d}"${openK.has("e"+d)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(exOf(X),0)} kcal burned</span><span class="smac">${X.length} ${X.length===1?"session":"sessions"}</span></summary><div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Exercise</th><th>Burned (kcal)</th><th class="noprint"></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td class="noprint"><button class="btn dg sm" data-xe="${x.id}">Delete</button></td></tr>`).join("")}<tr class="tot"><td colspan="2" class="l">Day total</td><td>${f(exOf(X),0)}</td><td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No exercise recorded in this period.</div>';
+  $("eDays").querySelectorAll("[data-xe]").forEach(b=>b.onclick=()=>delEx(b.dataset.xe,renderRec));
+  /* ===== WEIGHT ===== */
+  const W=filteredWt(),AW=[...S.wt].sort((a,b)=>a.ts-b.ts),pos=new Map(AW.map((x,i)=>[x.id,i])),kgs=W.map(x=>x.kg);
+  $("wStats").innerHTML=W.length?stat([[f(W[W.length-1].kg,1)+" kg","Latest weight"],[W.length>1?((W[W.length-1].kg-W[0].kg)>0?"+":"")+f(W[W.length-1].kg-W[0].kg,1)+" kg":"-","Change in period","first to last weigh-in"],[f(Math.min(...kgs),1)+" kg","Lowest"],[f(Math.max(...kgs),1)+" kg","Highest"],[W.length,"Weigh-ins"]]):"";
+  $("rWt").innerHTML=wChart(W);
+  $("wDays").innerHTML=W.length?`<div class="card"><h2>Weigh-ins</h2><div class="scroll"><table><tr><th>Date</th><th>Time</th><th>Weight (kg)</th><th>Change</th><th class="noprint"></th></tr>${[...W].reverse().map(x=>{const i=pos.get(x.id),pv=i>0?AW[i-1]:null,c=pv?x.kg-pv.kg:null,dd=new Date(x.ts);return`<tr><td class="l">${dlong(ymd(dd))}</td><td>${hm(dd)}</td><td>${f(x.kg,1)}</td><td>${c===null?"-":(c>0?"+":"")+f(c,1)}</td><td class="noprint"><button class="btn dg sm" data-xw="${x.id}">Delete</button></td></tr>`}).join("")}</table></div></div>`:'<div class="card empty">No weight recorded in this period.</div>';
+  $("wDays").querySelectorAll("[data-xw]").forEach(b=>b.onclick=()=>delWt(b.dataset.xw,renderRec));
+  /* ===== BALANCE (needed + exercise - eaten) ===== */
+  const GA=group(filtered(true)),fd=Object.keys(GA).sort();
+  let totDef=0,dD=0,dS=0,cnt=0,sN=0,sB=0,sA=0,sE=0;
+  const rows=fd.slice().reverse().map(d=>{const i=info(d,GA[d],GE[d]);sE+=i.cal;
+    if(i.def!==null){cnt++;totDef+=i.def;sN+=i.t.needed;sB+=i.burn;sA+=i.allow;if(i.def>0)dD++;else if(i.def<0)dS++}
+    const cls=i.def===null?"":i.def>=0?"pos":"neg";
+    return`<tr><td class="l">${dlong(d)}</td><td>${i.ok?f(i.t.needed,0):"-"}</td><td>${f(i.burn,0)}</td><td>${i.ok?f(i.allow,0):"-"}</td><td>${f(i.cal,0)}</td><td class="${cls}"><b>${i.def===null?"-":(i.def>0?"+":"")+f(i.def,0)}</b></td><td>${i.t&&i.t.goal?f(i.t.goal,0):"-"}</td></tr>`});
+  $("bStats").innerHTML=cnt?stat([[f(Math.abs(totDef),0),totDef>=0?"Total deficit (kcal)":"Total surplus (kcal)",`about ${f(Math.abs(totDef)/7700,2)} kg body fat`],[f(totDef/cnt,0),"Avg deficit per day (kcal)"],[dD,"Days in deficit"],[dS,"Days in surplus"],[f(sB,0),"Exercise counted (kcal)"]]):stat([["-","Deficit","Save daily targets below to see it"]]);
+  $("bDays").innerHTML=fd.length?`<div class="card"><h2>Day by day</h2><div class="scroll"><table><tr><th>Date</th><th>Needed</th><th>Exercise</th><th>Available</th><th>Eaten</th><th>Deficit (+) / surplus (−)</th><th>Goal</th></tr>${rows.join("")}<tr class="tot"><td class="l">Total</td><td>${f(sN,0)}</td><td>${f(sB,0)}</td><td>${f(sA,0)}</td><td>${f(sE,0)}</td><td>${(totDef>0?"+":"")+f(totDef,0)}</td><td></td></tr></table></div><p class="hint">Available = needed + exercise. Deficit = available − eaten. Days with no food logged are not counted.</p></div>`:'<div class="card empty">No food recorded in this period, so there is no balance to show.</div>';
+}
+
+/* downloads */
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast("Downloaded "+name)}
+const csv=rows=>"\ufeff"+rows.map(r=>r.map(c=>{c=String(c);return /[",\n]/.test(c)?`"${c.replace(/"/g,'""')}"`:c}).join(",")).join("\r\n");
+const r2=n=>Math.round((n||0)*100)/100;
+const stamp=()=>ymd(new Date());
+$("xDet").onclick=()=>{const L=filtered();dl(`entries-${stamp()}.csv`,csv([["Date","Time","Item","Amount","Unit","Combo",...NUT.map(n=>`${n[1]} (${n[2]})`)],...L.map(l=>{const d=new Date(l.ts);return[ymd(d),hm(d),l.name,l.amt,l.unit,l.combo||"",...NUT.map(([k])=>r2(l.n[k]))]})]),"text/csv")};
+$("xDay").onclick=()=>{const L=filtered(),X=filteredEx(),W=filteredWt(),G=group(L),GE=group(X),GW=group(W),ds=[...new Set([...Object.keys(G),...Object.keys(GE),...Object.keys(GW)])].sort();
+  dl(`daily-totals-${stamp()}.csv`,csv([["Date","Entries",...NUT.map(n=>`${n[1]} (${n[2]})`),"Needed (kcal)","Goal (kcal)","Exercise burned (kcal)","Available (needed + exercise)","Deficit (+) / Surplus (-)","Weight (kg)"],...ds.map(d=>{const t=sum(G[d]||[]),i=info(d,G[d],GE[d]);return[d,(G[d]||[]).length,...NUT.map(([k])=>r2(t[k])),i.t?i.t.needed:"",i.t?i.t.goal:"",r2(i.burn),i.ok?r2(i.allow):"",i.def===null?"":r2(i.def),GW[d]?GW[d][GW[d].length-1].kg:""]})]),"text/csv")};
+$("xEx").onclick=()=>{const X=filteredEx();dl(`exercise-${stamp()}.csv`,csv([["Date","Time","Exercise","Calories burned"],...X.map(x=>{const d=new Date(x.ts);return[ymd(d),hm(d),x.name,r2(x.kcal)]})]),"text/csv")};
+$("xWt").onclick=()=>{const W=filteredWt();dl(`weight-${stamp()}.csv`,csv([["Date","Time","Weight (kg)"],...W.map(x=>{const d=new Date(x.ts);return[ymd(d),hm(d),x.kg]})]),"text/csv")};
+$("xItems").onclick=()=>dl(`items-${stamp()}.csv`,csv([["Item","Unit",...NUT.map(n=>`${n[1]} (${n[2]}) per 1 unit`)],...S.items.map(i=>[i.name,i.unit,...NUT.map(([k])=>i[k])])]),"text/csv");
+$("xRep").onclick=()=>{const c=document.createElement("div");c.appendChild($("rTitle").cloneNode(true));[["Food",["rStats","rAvg","rTop","rDays"]],["Exercise",["eStats","eDays"]],["Weight",["wStats","rWt","wDays"]],["Balance",["bStats","bDays"]]].forEach(([h,ids])=>{const t=document.createElement("h2");t.textContent=h;c.appendChild(t);ids.forEach(i=>c.appendChild($(i).cloneNode(true)))});c.querySelectorAll(".noprint,.chart,.lbls").forEach(e=>e.remove());c.querySelectorAll("details").forEach(d=>d.setAttribute("open",""));
+  const css="body{font:13px Segoe UI,Arial,sans-serif;margin:24px;color:#111}table{width:100%;border-collapse:collapse}th,td{padding:4px 6px;text-align:right;border-bottom:1px solid #ccc}th:first-child,td:first-child,.l{text-align:left}.stats{display:flex;gap:10px;flex-wrap:wrap}.st{border:1px solid #ccc;padding:8px 12px}.st b{display:block;font-size:20px}.dh{display:flex;justify-content:space-between;font-weight:700;margin-top:14px}tr.tot td{font-weight:700;background:#f5e9c8}.bar{display:none}h2{font-size:15px;margin:16px 0 6px}.card{break-inside:avoid}summary{list-style:none;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}summary::after{display:none}.sdt{font-weight:700}.ssum{font-weight:700}.smac{width:100%;color:#555;font-size:12px}details.day{border:1px solid #ccc;padding:8px;margin-top:10px;break-inside:avoid}.dbody{margin-top:6px}";
+  dl(`report-${stamp()}.html`,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Calorie report</title><style>${css}</style></head><body><p style="color:#666">Open this file and press Ctrl+P to print or save as PDF.</p>${c.innerHTML}</body></html>`,"text/html")};
+$("xJson").onclick=()=>dl(`calorie-tracker-backup-${stamp()}.json`,JSON.stringify(S,null,2),"application/json");
+$("xImp").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.logs))throw 0;ask("Replace all current data with this backup?",()=>{S={items:d.items,logs:d.logs,targets:d.targets||[],ex:d.ex||[],wt:d.wt||[],combos:d.combos||[]};if(d.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:d.goal});S.del={};tInit=false;hydrate();COLS.forEach(c=>S[c].forEach(r=>r.u=Date.now()));save();allFiles().forEach(markDirty);if(cfg.token)schedule();renderItems();renderRec();toast("Backup restored")},"Yes, replace")}catch(x){toast("Not a valid backup file")}};r.readAsText(fl);e.target.value=""};
+
+/* ---------- mobile helpers ---------- */
+const MQ=window.matchMedia?matchMedia("(max-width:700px)"):{matches:false,addEventListener(){}};
+const segState={items:"add",log:"food"};
+function applySeg(){["items","log"].forEach(id=>{const sec=$(id),v=segState[id];sec.querySelectorAll("[data-p]").forEach(p=>p.classList.toggle("mh",p.dataset.p!==v));sec.querySelectorAll(".mseg button").forEach(b=>b.classList.toggle("on",b.dataset.v===v))})}
+document.querySelectorAll(".mseg button").forEach(b=>b.onclick=()=>{segState[b.closest("section").id]=b.dataset.v;applySeg()});
+function labelTables(){document.querySelectorAll("main table").forEach(t=>{let H=null;t.querySelectorAll("tr").forEach(tr=>{if(tr.dataset.lb)return;tr.dataset.lb="1";
+  const th=tr.querySelectorAll("th");if(th.length){tr.classList.add("hd");H=[...th].map(x=>(x.childNodes[0]?x.childNodes[0].textContent:"").trim());return}
+  let ci=0;tr.querySelectorAll("td").forEach(td=>{const lab=H&&H[ci];if(lab&&!td.classList.contains("l"))td.dataset.l=lab;if(td.querySelector("button"))td.classList.add("ac");ci+=td.colSpan||1})})})}
+let lbT=0;new MutationObserver(()=>{cancelAnimationFrame(lbT);lbT=requestAnimationFrame(labelTables)}).observe(document.querySelector("main"),{childList:true,subtree:true});
+function layoutMode(){$("rDl").open=!MQ.matches;applySeg()}
+if(MQ.addEventListener)MQ.addEventListener("change",layoutMode);
+layoutMode();labelTables();
+renderItems();
+show("log");
+/* ---------- encrypted sync through a private GitHub folder ---------- */
+const TE=new TextEncoder(),TD=new TextDecoder();
+const b64=u=>{let t="";for(let i=0;i<u.length;i+=32768)t+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(t)};
+const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+let KEY=null,st={s:"off",msg:""},busy=false,again=false,syncT=null,lastTry=0;
+async function deriveKey(pass,salt){const km=await crypto.subtle.importKey("raw",TE.encode(pass),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function encJ(o){const iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},KEY,TE.encode(JSON.stringify(o)));return JSON.stringify({v:1,iv:b64(iv),d:b64(new Uint8Array(ct))})}
+async function decJ(t){const o=typeof t==="string"?JSON.parse(t):t,pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(o.iv)},KEY,unb64(o.d));return JSON.parse(TD.decode(pt))}
+const fname=k=>k==="core"?"core.json":"m-"+k+".json";
+const kname=n=>n==="core.json"?"core":n.slice(2,-5);
+const FILE_RE=/^(core|m-\d{4}-\d{2})\.json$/;
+const api=(p,o={})=>fetch("https://api.github.com/repos/"+cfg.owner+"/"+cfg.repo+p,Object.assign({},o,{cache:"no-store",headers:Object.assign({Authorization:"Bearer "+cfg.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},o.headers||{})}));
+const RAW={Accept:"application/vnd.github.raw+json"};
+async function apiErr(r){let m="";try{m=(await r.json()).message||""}catch(e){}
+  const e=new Error(r.status===401?"The access key is wrong or has expired":r.status===403?(r.headers.get("x-ratelimit-remaining")==="0"?"GitHub rate limit reached, try again later":"The key does not have permission (it needs Contents: Read and write)"):r.status===404?"Folder not found. Check the username, folder name, and that the key can access that folder":"GitHub error "+r.status+(m?": "+m:""));e.status=r.status;return e}
+async function listRemote(){const r=await api("/contents");
+  if(r.status===404){let m="";try{m=(await r.json()).message||""}catch(e){}if(/empty/i.test(m))return{};throw await apiErr(r)}
+  if(!r.ok)throw await apiErr(r);const o={};(await r.json()).forEach(x=>{if(x.type==="file")o[x.name]=x.sha});return o}
+async function getFile(n){const r=await api("/contents/"+n,{headers:RAW});if(!r.ok)throw await apiErr(r);return decJ(await r.text())}
+function buildFile(key){const rec={},del={};COLS.forEach(c=>{rec[c]=S[c].filter(r=>fileOf(c,r)===key)});Object.keys(S.del).forEach(k=>{if(S.del[k].f===key)del[k]=S.del[k]});return{v:1,rec,del}}
+const isEmpty=o=>!Object.keys(o.del).length&&COLS.every(c=>!o.rec[c].length);
+function vset(o){const a=[];COLS.forEach(c=>(o.rec[c]||[]).forEach(r=>a.push(keyOf(c,r)+"@"+(r.u||0))));Object.keys(o.del||{}).forEach(k=>a.push("x"+k+"@"+o.del[k].t));return a.sort().join("|")}
+function mergeInto(list){const M={};COLS.forEach(c=>{M[c]=new Map(S[c].map(r=>[keyOf(c,r),r]))});
+  list.forEach(R=>{Object.keys(R.del||{}).forEach(k=>{const v=R.del[k],cur=S.del[k];if(!cur||cur.t<v.t)S.del[k]=v});
+    COLS.forEach(c=>(R.rec[c]||[]).forEach(r=>{const k=keyOf(c,r),l=M[c].get(k);if(!l||(l.u||0)<(r.u||0))M[c].set(k,r)}))});
+  COLS.forEach(c=>{S[c]=[...M[c].values()].filter(r=>{const d=S.del[keyOf(c,r)];return!(d&&d.t>=(r.u||0))})})}
+function afterMerge(){S.targets.sort((a,b)=>a.from.localeCompare(b.from));hydrate();rebuildShadow();persist();renderItems();show(document.querySelector("#nav .on").dataset.t)}
+async function ensureKey(){if(KEY)return;if(!cfg.salt||!cfg.pass)throw new Error("Not connected");KEY=await deriveKey(cfg.pass,unb64(cfg.salt))}
+async function syncOnce(){
+  await ensureKey();const files=await listRemote(),remotes={};
+  const changed=Object.keys(files).filter(n=>FILE_RE.test(n)&&files[n]!==cfg.shas[n]);
+  for(const n of changed)remotes[n]=await getFile(n);
+  if(changed.length){mergeInto(changed.map(n=>remotes[n]));afterMerge();changed.forEach(n=>{cfg.shas[n]=files[n]})}
+  const up=new Set(cfg.dirty);
+  changed.forEach(n=>{const k=kname(n);if(vset(buildFile(k))!==vset(remotes[n]))up.add(k)});
+  for(const k of up){const name=fname(k),obj=buildFile(k);
+    if(isEmpty(obj)&&!files[name]){cfg.dirty=cfg.dirty.filter(x=>x!==k);continue}
+    const body={message:"sync",content:b64(TE.encode(await encJ(obj)))};if(cfg.shas[name])body.sha=cfg.shas[name];
+    const r=await api("/contents/"+name,{method:"PUT",body:JSON.stringify(body)});
+    if(r.status===409||r.status===422)return true;
+    if(!r.ok)throw await apiErr(r);
+    cfg.shas[name]=(await r.json()).content.sha;cfg.dirty=cfg.dirty.filter(x=>x!==k);saveCfg()}
+  cfg.dirty=[];return false}
+async function sync(){
+  if(!cfg.token)return setSt("off");
+  if(busy){again=true;return}
+  busy=true;lastTry=Date.now();setSt("busy");
+  try{for(let i=0;i<3;i++){if(!(await syncOnce()))break;if(i===2)throw new Error("Another device is syncing at the same moment. Will retry.")}
+    cfg.last=Date.now();cfg.pend=0;saveCfg();setSt("ok")}
+  catch(e){const was=st.s==="err";
+    const msg=e.name==="OperationError"?"Wrong passphrase, or the data folder was reset. Disconnect and connect again.":e instanceof TypeError?"Cannot reach GitHub (no internet?)":e instanceof SyntaxError?"A file in the data folder is damaged or not from this app":e.message;
+    setSt("err",msg);if(!was)toast("Not synced: "+msg)}
+  busy=false;if(again){again=false;schedule(500)}}
+function schedule(ms=2000){if(!cfg.token)return;setSt("busy");clearTimeout(syncT);syncT=setTimeout(sync,ms)}
+function trigger(force){if(!cfg.token)return;if(!force&&Date.now()-lastTry<8000)return;schedule(300)}
+/* status light */
+function setSt(s,msg){st={s,msg:msg||""};renderBadge();if($("sync").classList.contains("on"))renderSync()}
+function ago(t){const x=(Date.now()-t)/1000;return x<10?"just now":x<60?Math.floor(x)+" sec ago":x<3600?Math.floor(x/60)+" min ago":x<86400?Math.floor(x/3600)+" h ago":Math.floor(x/86400)+" days ago"}
+function renderBadge(){const b=$("syncBadge");let c="bad",t,tip="";
+  if(!cfg.token){t="Not connected";tip="Tap to set up sync"}
+  else if(st.s==="busy"){t="Syncing…";c="busy"}
+  else if(st.s==="ok"&&!cfg.pend){t="Synced · "+ago(cfg.last);c="ok";tip="This device and GitHub have the same data"}
+  else{t=cfg.pend?`Not synced · ${cfg.pend} change${cfg.pend>1?"s":""} waiting`:"Not synced";tip=st.msg||"Tap for details"}
+  b.className="badge "+c;b.textContent=t;b.title=tip}
+function renderSync(){const on=!!cfg.token;$("sForm").style.display=on?"none":"";$("sOff").style.display=on?"":"none";$("sNow").style.display=on?"":"none";
+  if(!$("sOwner").value&&cfg.owner)$("sOwner").value=cfg.owner;if(cfg.repo&&!on)$("sRepo").value=cfg.repo;
+  $("sStat").innerHTML=on?`<p><b>Connected</b> to ${esc(cfg.owner)}/${esc(cfg.repo)}.</p><p>Last successful sync: ${cfg.last?esc(new Date(cfg.last).toLocaleString()):"never"}. Changes waiting: ${cfg.pend||0}.</p>${st.s==="err"?`<p style="color:var(--dg)"><b>Problem:</b> ${esc(st.msg)}</p>`:""}<p class="hint">This app syncs when you open it, when you switch back to it, and a few seconds after you save something.</p>`:`<p>This device is <b>not connected</b>. Your data is saved only in this browser. Fill in the form below to connect.</p>`}
+$("syncBadge").onclick=()=>show("sync");
+$("sNow").onclick=()=>schedule(0);
+$("sOff").onclick=()=>ask("Disconnect this device? Your data stays on this device and in GitHub.",()=>{Object.assign(cfg,{token:"",pass:"",salt:"",shas:{},dirty:[],pend:0,last:0});KEY=null;saveCfg();setSt("off");renderSync();toast("Disconnected")},"Yes, disconnect");
+$("sGo").onclick=async()=>{
+  const owner=$("sOwner").value.trim(),repo=$("sRepo").value.trim(),token=$("sTok").value.trim(),pass=$("sPass").value,pass2=$("sPass2").value;
+  if(!owner||!repo||!token||!pass)return toast("Fill in all the fields");
+  if(pass.length<8)return toast("Use a passphrase of at least 8 characters");
+  if(!(window.crypto&&crypto.subtle))return toast("Encryption is not available here (the page must be opened over https)");
+  const old=cfg;cfg=Object.assign({},old,{owner,repo,token,shas:{},dirty:[]});$("sErr").textContent="";setSt("busy");
+  try{
+    const pr=await api("");if(!pr.ok)throw await apiErr(pr);
+    if(!(await pr.json()).private)throw new Error("This folder is public. Make it private in its GitHub settings first.");
+    let salt;const mr=await api("/contents/meta.json",{headers:RAW});
+    if(mr.ok){const m=JSON.parse(await mr.text());salt=m.salt;KEY=await deriveKey(pass,unb64(salt));try{await decJ(m.check)}catch(e){KEY=null;throw new Error("Wrong passphrase for this data folder")}}
+    else if(mr.status===404){if(pass!==pass2)throw new Error("First time: type the same passphrase in both boxes");
+      const sb=crypto.getRandomValues(new Uint8Array(16));salt=b64(sb);KEY=await deriveKey(pass,sb);
+      const meta=JSON.stringify({v:1,salt,check:await encJ({ok:1})}),pu=await api("/contents/meta.json",{method:"PUT",body:JSON.stringify({message:"setup",content:b64(TE.encode(meta))})});
+      if(!pu.ok)throw await apiErr(pu)}
+    else throw await apiErr(mr);
+    Object.assign(cfg,{pass,salt,dirty:allFiles(),pend:0,last:0});saveCfg();
+    $("sPass").value=$("sPass2").value=$("sTok").value="";toast("Connected");renderSync();sync()
+  }catch(e){cfg=old;KEY=null;const msg=e instanceof TypeError?"Cannot reach GitHub (no internet?)":e.message;$("sErr").textContent=msg;setSt(cfg.token?"err":"off",msg)}};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)trigger()});
+addEventListener("focus",()=>trigger());
+addEventListener("online",()=>trigger(true));
+renderBadge();setInterval(renderBadge,30000);
+if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(cfg.token){setSt("busy");sync()}
+</script>
+</body>
+</html>
