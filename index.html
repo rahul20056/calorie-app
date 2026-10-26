@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lrAr4UMS7s9JArUX4BhDM0Zx1S01A1j7p/9dijGKjWs='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.github.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LKbAMqPUb7PWRhe517EfLx3c1KSe2Zwulc+83M1YeZM='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.github.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18262a" media="(prefers-color-scheme: dark)">
@@ -16,9 +16,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Calories">
 <style>
-:root{--bg:#f3f7f5;--sf:#ffffff;--ink:#15302c;--mut:#5c7570;--ln:#d6e2dd;--ac:#e9a416;--acd:#9a6a00;--ac2:#0e7a6b;--dg:#c4402f;--bt:#fff;--okc:#188a4a;--tbg:#dff0ea;--tln:#0e7a6b;--ttx:#0b4f45;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}}
-:root[data-theme=dark]{--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}
+:root{--bg:#f3f7f5;--sf:#ffffff;--ink:#15302c;--mut:#5c7570;--ln:#d6e2dd;--ac:#e9a416;--acd:#9a6a00;--ac2:#0e7a6b;--dg:#c4402f;--bt:#fff;--okc:#188a4a;--yl:#e2b007;--tbg:#dff0ea;--tln:#0e7a6b;--ttx:#0b4f45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--yl:#f5d142;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#101a19;--sf:#18262a;--ink:#e8efed;--mut:#8fa3a0;--ln:#2a3b3d;--ac:#f0b429;--acd:#f0b429;--ac2:#4fc3b5;--dg:#ff7b6b;--bt:#06201d;--okc:#4cd08a;--yl:#f5d142;--tbg:#27454a;--tln:#f0b429;--ttx:#ffe7a8;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
 header{display:flex;align-items:center;gap:20px;padding:14px 24px;border-bottom:1px solid var(--ln);background:var(--sf);box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 6%,transparent);position:sticky;top:0;z-index:5;flex-wrap:wrap}
@@ -69,10 +69,14 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--ac);outlin
 .btn.sec{background:var(--sf);color:var(--ink);border:1px solid var(--mut)}
 .btn.sm{padding:4px 9px;font-size:12.5px}
 .btn.dg{color:var(--dg);background:var(--sf);border:1px solid var(--dg)}
-#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:50}
+#modal{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
 #modal.on{display:flex}
-#modal div{background:var(--sf);color:var(--ink);padding:22px;border-radius:8px;max-width:380px;border:1px solid var(--ln)}
+#modal>div{background:var(--sf);color:var(--ink);padding:22px;border-radius:12px;width:100%;max-width:380px;border:1px solid var(--ln);border-top:4px solid var(--dg);box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #modal p{margin:0 0 16px}
+#mT{display:block;font-size:16px;margin-bottom:6px}
+#mD{display:block;color:var(--mut);white-space:pre-line;font-size:14px}
+#modal .row{padding:0;border:0;background:none;gap:10px}
+#modal .row .btn{flex:1}
 .row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
 .row>*{flex:0 0 auto}
 .sp{flex:1!important}
@@ -88,13 +92,17 @@ tr.tot td{font-weight:700;background:var(--tbg);color:var(--ttx);border-top:2px 
 .st{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px 14px}
 .st b{display:block;font:700 24px Georgia,serif}
 .st span{font-size:12.5px;color:var(--mut)}
-.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;background:var(--ac2)}.bar i.over{background:var(--dg)}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin-top:6px;position:relative}
+.bar .tk{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.55}
+.bar i{display:block;height:100%;background:var(--ac2)}
+.bar i.s-ok,.chart div.s-ok,.lg.s-ok{background:var(--okc)}
+.bar i.s-warn,.chart div.s-warn,.lg.s-warn{background:var(--yl)}
+.bar i.s-over,.chart div.s-over,.lg.s-over{background:var(--dg)}
+.lg{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 5px 0 12px;vertical-align:middle}
 .pv{padding:10px 12px;background:var(--bg);border-radius:6px;margin-top:12px;font-size:13.5px;min-height:42px}
 .empty{color:var(--mut);padding:24px;text-align:center}
 .chart{display:flex;align-items:end;gap:3px;height:150px;padding-top:10px;border-bottom:1px solid var(--ln);overflow-x:auto}
-.chart div{flex:1 0 14px;max-width:48px;background:var(--ac);border-radius:3px 3px 0 0;position:relative;min-height:2px}
-.chart div.over{background:var(--dg)}
+.chart div{flex:1 0 14px;max-width:48px;background:var(--ac2);border-radius:3px 3px 0 0;position:relative;min-height:2px}
 .lbls{display:flex;gap:3px;font-size:10.5px;color:var(--mut);overflow:hidden}
 .lbls span{flex:1 0 14px;max-width:48px;text-align:center}
 .hint{font-size:12.5px;color:var(--mut)}
@@ -271,16 +279,10 @@ tr.tot td{font-weight:700;background:var(--tbg);color:var(--ttx);border-top:2px 
             <div class="sp"></div>
       <button class="btn sec sm" id="rPrev">‹ Prev</button><button class="btn sec sm" id="rNext">Next ›</button>
     </div>
-    <details id="rDl" open><summary>Downloads and backup</summary>
+    <details id="rDl" open><summary>Backup and restore</summary>
     <div class="row" style="margin-top:12px">
-      <button class="btn sec sm" id="xDet">Download entries (CSV)</button>
-      <button class="btn sec sm" id="xDay">Download daily totals (CSV)</button>
-      <button class="btn sec sm" id="xEx">Download exercise (CSV)</button>
-      <button class="btn sec sm" id="xWt">Download weight (CSV)</button>
-      <button class="btn sec sm" id="xItems">Download items (CSV)</button>
-      <button class="btn sec sm" id="xJson">Backup everything (JSON)</button>
+      <button class="btn sec sm" id="xJson">Back up my data</button>
       <label class="btn sec sm" style="margin:0;cursor:pointer">Restore backup<input id="xImp" type="file" accept=".json" hidden></label>
-      <button class="btn sec sm" id="xRep">Download report (print / PDF)</button>
     </div>
     </details>
   </div>
@@ -326,7 +328,7 @@ tr.tot td{font-weight:700;background:var(--tbg);color:var(--ttx);border-top:2px 
   </div>
 </section>
 </main>
-<div id="modal"><div><p id="mMsg"></p><div class="row"><button class="btn dg" id="mYes">Yes, delete</button><button class="btn sec" id="mNo">Cancel</button></div></div></div>
+<div id="modal"><div role="alertdialog" aria-modal="true" aria-labelledby="mT"><p id="mMsg"><b id="mT"></b><span id="mD"></span></p><div class="row"><button class="btn dg" id="mYes">Yes, delete</button><button class="btn sec" id="mNo">Cancel</button></div></div></div>
 <div id="toast"></div>
 
 <script>
@@ -392,7 +394,10 @@ const pd=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
 const hm=d=>d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
 const dlong=s=>pd(s).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"});
 
-function ask(msg,yes,label){$("mMsg").textContent=msg;$("mYes").textContent=label||"Yes, delete";$("modal").classList.add("on");$("mYes").onclick=()=>{$("modal").classList.remove("on");yes()};$("mNo").onclick=()=>$("modal").classList.remove("on")}
+function ask(msg,yes,label){const m=$("modal"),parts=String(msg).split("\n");$("mT").textContent=parts[0];$("mD").textContent=parts.slice(1).join("\n");$("mYes").textContent=label||"Yes, delete";m.classList.add("on");
+  $("mYes").onclick=()=>{m.classList.remove("on");yes()};$("mNo").onclick=()=>m.classList.remove("on");$("mNo").focus()}
+$("modal").addEventListener("click",e=>{if(e.target===$("modal"))$("modal").classList.remove("on")});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("on")});
 /* keep logs in sync with item details */
 function hydrate(){S.logs.forEach(l=>{const cb=l.cid&&S.combos.find(c=>c.id===l.cid);if(cb)l.combo=cb.name;const it=S.items.find(i=>i.id===l.itemId);if(!it)return;l.name=it.name;l.unit=it.unit;l.n={};NUT.forEach(([k])=>l.n[k]=(it[k]||0)*l.amt)})}
 hydrate();
@@ -421,7 +426,7 @@ function renderItems(){renderCombos();
   $("iCount").textContent=S.items.length;
   $("iTable").innerHTML=L.length?`<tr><th>Item</th>${NUT.map(n=>`<th>${n[1]}<br>/1 ${"g/ml"}</th>`).join("")}<th></th></tr>`+L.map(i=>`<tr><td class="l">${esc(i.name)} <span class="hint">(${esc(i.unit)})</span></td>${NUT.map(([k])=>`<td>${fv(i[k])}</td>`).join("")}<td><button class="btn sec sm" data-e="${esc(i.id)}">Edit</button> <button class="btn dg sm" data-d="${esc(i.id)}">Delete</button></td></tr>`).join(""):`<tr><td class="empty">No items yet. Add your first one on the left.</td></tr>`;
   $("iTable").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const i=S.items.find(x=>x.id===b.dataset.e);editId=i.id;$("iName").value=i.name;$("iUnit").value=i.unit;$("iBasis").value="1";NUT.forEach(([k])=>$("n_"+k).value=fv(i[k])||"");$("itTitle").textContent="Edit item";$("iSave").textContent="Update item";$("iCancel").style.display="";scrollTo(0,0)});
-  $("iTable").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ask("Delete this item? Its past records stay, using the last saved values.",()=>{S.items=S.items.filter(x=>x.id!==b.dataset.d);save();renderItems();toast("Item deleted")})});
+  $("iTable").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ask("Delete “"+((S.items.find(x=>x.id===b.dataset.d)||{}).name||"this item")+"”?\nThis cannot be undone. Past records keep the values they had.",()=>{S.items=S.items.filter(x=>x.id!==b.dataset.d);save();renderItems();toast("Item deleted")})});
 }
 $("iSearch").oninput=renderItems;
 let cSel=[],cEdit=null;
@@ -439,7 +444,7 @@ function renderCombos(){cSel=cSel.filter(id=>S.items.some(i=>i.id===id));
   const C=[...S.combos].sort((a,b)=>a.name.localeCompare(b.name));
   $("cTable").innerHTML=C.length?`<tr><th>Combo</th><th>Ingredients</th><th></th></tr>`+C.map(c=>`<tr><td class="l"><b>${esc(c.name)}</b></td><td class="l" style="white-space:normal">${c.items.map(id=>S.items.find(i=>i.id===id)).filter(Boolean).map(i=>esc(i.name)).join(", ")}</td><td><button class="btn sec sm" data-ce="${esc(c.id)}">Edit</button> <button class="btn dg sm" data-cd="${esc(c.id)}">Delete</button></td></tr>`).join(""):'<tr><td class="empty">No combos yet. Build your first one on the left.</td></tr>';
   $("cTable").querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{const c=S.combos.find(x=>x.id===b.dataset.ce);cEdit=c.id;cSel=c.items.filter(id=>S.items.some(i=>i.id===id));$("cName").value=c.name;$("cTitle").textContent="Edit combo";$("cSave").textContent="Update combo";$("cCancel").style.display="";renderCombos();$("cName").scrollIntoView({block:"center"})});
-  $("cTable").querySelectorAll("[data-cd]").forEach(b=>b.onclick=()=>ask("Delete this combo? Records already saved with it stay.",()=>{S.combos=S.combos.filter(x=>x.id!==b.dataset.cd);if(cEdit===b.dataset.cd)clearCombo();save();renderCombos();toast("Combo deleted")}))}
+  $("cTable").querySelectorAll("[data-cd]").forEach(b=>b.onclick=()=>ask("Delete the combo “"+((S.combos.find(x=>x.id===b.dataset.cd)||{}).name||"")+"”?\nThis cannot be undone. Meals already logged with it stay.",()=>{S.combos=S.combos.filter(x=>x.id!==b.dataset.cd);if(cEdit===b.dataset.cd)clearCombo();save();renderCombos();toast("Combo deleted")}))}
 
 /* 2. log */
 function fillSel(el,withAll){const cur=el.value;el.innerHTML=(withAll?'<option value="">All items</option>':"")+[...S.items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${esc(i.id)}">${esc(i.name)} (${esc(i.unit)})</option>`).join("");if(cur)el.value=cur}
@@ -470,14 +475,14 @@ function foodRows(D,keys,del){const seen={};let h="";
     h+=`<tr class="ch"><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.combo||"Combo")} (combo)</td><td>${l.ate?`ate ${f(l.ate)} of ${f(l.tot)}`:M.length+" items"}</td>${keys.map(k=>`<td>${f(t[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-xg="${esc(l.gid)}">Delete</button></td>`:""}</tr>`;
     h+=M.map(x=>`<tr class="cs"><td class="l tm"></td><td class="l nm">${esc(x.name)}</td><td>${f(x.amt)} ${esc(x.unit)}${x.made?` <span class="hint">(of ${f(x.made)})</span>`:""}</td>${keys.map(k=>`<td>${f(x.n[k])}</td>`).join("")}${del?'<td class="noprint"></td>':""}</tr>`).join("")}
   else h+=`<tr><td class="l tm">${hm(new Date(l.ts))}</td><td class="l nm">${esc(l.name)}</td><td>${f(l.amt)} ${esc(l.unit)}</td>${keys.map(k=>`<td>${f(l.n[k])}</td>`).join("")}${del?`<td class="noprint"><button class="btn dg sm" data-x="${esc(l.id)}">Delete</button></td>`:""}</tr>`});return h}
-function bindFoodDel(root,cb){root.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>ask("Delete this entry?",()=>{S.logs=S.logs.filter(l=>l.id!==b.dataset.x);save();cb();toast("Entry deleted")}));
-  root.querySelectorAll("[data-xg]").forEach(b=>b.onclick=()=>ask("Delete this whole combo meal and all its items?",()=>{S.logs=S.logs.filter(l=>l.gid!==b.dataset.xg);save();cb();toast("Combo deleted")}))}
-function delEx(id,cb){ask("Delete this exercise entry?",()=>{S.ex=S.ex.filter(x=>x.id!==id);save();cb();toast("Exercise deleted")})}
+function bindFoodDel(root,cb){root.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>ask("Delete this entry?\n"+(l=>l?l.name+" · "+f(l.amt)+" "+l.unit+". This cannot be undone.":"This cannot be undone.")(S.logs.find(l=>l.id===b.dataset.x)),()=>{S.logs=S.logs.filter(l=>l.id!==b.dataset.x);save();cb();toast("Entry deleted")}));
+  root.querySelectorAll("[data-xg]").forEach(b=>b.onclick=()=>ask("Delete this whole combo meal?\n"+(l=>l?l.combo+", all its items will be removed. This cannot be undone.":"This cannot be undone.")(S.logs.find(l=>l.gid===b.dataset.xg)),()=>{S.logs=S.logs.filter(l=>l.gid!==b.dataset.xg);save();cb();toast("Combo deleted")}))}
+function delEx(id,cb){ask("Delete this exercise entry?\n"+(x=>x?x.name+" · "+f(x.kcal,0)+" kcal. This cannot be undone.":"This cannot be undone.")(S.ex.find(x=>x.id===id)),()=>{S.ex=S.ex.filter(x=>x.id!==id);save();cb();toast("Exercise deleted")})}
 $("eSave").onclick=()=>{const k=parseFloat($("eKcal").value);if(!(k>0))return toast("Enter the calories burned");
   const t=$("eTime").value?new Date($("eTime").value):new Date();
   S.ex.push({id:uid(),ts:t.getTime(),name:$("eName").value.trim()||"Exercise",kcal:k});save();
   $("eKcal").value="";$("eName").value="";$("eTime").value=dtl(new Date());renderToday();toast("Exercise saved")};
-function delWt(id,cb){ask("Delete this weight entry?",()=>{S.wt=S.wt.filter(x=>x.id!==id);save();cb();toast("Weight deleted")})}
+function delWt(id,cb){ask("Delete this weight entry?\n"+(x=>x?f(x.kg,1)+" kg on "+dlong(ymd(new Date(x.ts)))+". This cannot be undone.":"This cannot be undone.")(S.wt.find(x=>x.id===id)),()=>{S.wt=S.wt.filter(x=>x.id!==id);save();cb();toast("Weight deleted")})}
 $("wSave").onclick=()=>{const k=parseFloat($("wKg").value);if(!(k>0&&k<500))return toast("Enter your weight in kg");
   const t=$("wTime").value?new Date($("wTime").value):new Date();
   S.wt.push({id:uid(),ts:t.getTime(),kg:k});save();$("wKg").value="";$("wTime").value=dtl(new Date());renderWt();toast("Weight saved")};
@@ -530,7 +535,7 @@ function renderTargets(){
   if(!tInit){tInit=true;$("tFrom").value=ymd(new Date());const c=tgt(ymd(new Date()))||S.targets[S.targets.length-1];if(c){$("tNeed").value=c.needed||"";$("tGoal").value=c.goal||""}}
   const T=[...S.targets].reverse();
   $("tList").innerHTML=T.length?`<table><tr><th>Applies from</th><th>Needed (kcal)</th><th>Goal (kcal)</th><th>Planned deficit</th><th></th></tr>${T.map(x=>`<tr><td class="l">${dlong(x.from)}</td><td>${f(x.needed,0)}</td><td>${f(x.goal,0)}</td><td>${x.needed>0?f(x.needed-x.goal,0):"-"}</td><td><button class="btn dg sm" data-t="${esc(x.from)}">Delete</button></td></tr>`).join("")}</table>`:'<div class="hint">No targets set yet.</div>';
-  $("tList").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>ask("Delete this target? Days after it will use the previous target.",()=>{S.targets=S.targets.filter(x=>x.from!==b.dataset.t);save();renderRec()}))}
+  $("tList").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>ask("Delete the target from "+dlong(b.dataset.t)+"?\nDays after it will use the previous target. This cannot be undone.",()=>{S.targets=S.targets.filter(x=>x.from!==b.dataset.t);save();renderRec()}))}
 let rTab="food";
 const openK=new Set(),closedK=new Set();
 const isOpen=(k,ix)=>openK.has(k)||(ix===0&&!closedK.has(k));
@@ -539,6 +544,7 @@ const isOpen=(k,ix)=>openK.has(k)||(ix===0&&!closedK.has(k));
 document.querySelectorAll("[data-exp]").forEach(b=>b.onclick=()=>{const[id,v]=b.dataset.exp.split(":");$(id).querySelectorAll("details.day").forEach(d=>{d.open=v==="1";const k=d.dataset.k;if(v==="1"){closedK.delete(k);openK.add(k)}else{openK.delete(k);closedK.add(k)}})});
 function applyRTab(){document.querySelectorAll("#rec [data-rp]").forEach(p=>p.classList.toggle("rh",p.dataset.rp!==rTab));document.querySelectorAll("#rSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===rTab));$("rItemBox").style.display=rTab==="food"?"":"none"}
 $("rSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;rTab=b.dataset.v;applyRTab()};
+const stateOf=(cal,g,nd)=>{if(nd&&cal>nd)return"over";if(g&&cal>g)return"warn";return g||nd?"ok":""};
 const stat=a=>a.map(([x,y,z])=>`<div class="st"><b>${x}</b><span>${y}</span>${z?`<br><span>${z}</span>`:""}</div>`).join("");
 function renderRec(){
   fillSel($("rItem"),true);renderTargets();const m=$("rMode").value;
@@ -547,28 +553,30 @@ function renderRec(){
   const[s,e]=range();$("rTitle").textContent=m==="all"?"All time":m==="day"?dlong(s):`${dlong(s)}  to  ${dlong(e)}`;
   applyRTab();
   /* ===== FOOD ===== */
+  const itemF=!!$("rItem").value,E=filteredEx(),GE=group(E);
   const L=filtered(),G=group(L),food=Object.keys(G).sort(),T=sum(L),n=food.length;
   $("rStats").innerHTML=stat([[f(T.cal,0),"Total kcal eaten"],[n?f(T.cal/n,0):0,"Avg kcal per day"],[f(T.pro)+" g","Total protein"],[f(T.carb)+" g","Total carbs"],[f(T.fat)+" g","Total fat"],[n,"Days logged"],[L.length,"Food entries"]]);
   const byMonth=n>62;let bars=[];
-  if(byMonth){const M={};food.forEach(d=>{(M[d.slice(0,7)]=M[d.slice(0,7)]||[]).push(sum(G[d]).cal)});bars=Object.keys(M).sort().map(k=>({k,l:k.slice(5),v:M[k].reduce((a,b)=>a+b,0)/M[k].length,over:false}))}
-  else bars=food.map(d=>{const t=tgt(d),v=sum(G[d]).cal;return{k:d,l:d.slice(8),v,over:!!(t&&t.goal&&v>t.goal)}});
+  if(byMonth){const M={};food.forEach(d=>{const t=tgt(d),bn=exOf(GE[d]||[]);(M[d.slice(0,7)]=M[d.slice(0,7)]||[]).push({c:sum(G[d]).cal,g:t?t.goal:0,n:t&&t.needed>0?t.needed+bn:0})});
+    bars=Object.keys(M).sort().map(k=>{const a=M[k],av=x=>a.reduce((p,q)=>p+q[x],0)/a.length;return{k,l:k.slice(5),v:av("c"),st:itemF?"":stateOf(av("c"),av("g"),av("n"))}})}
+  else bars=food.map(d=>{const v=sum(G[d]).cal,t=tgt(d);return{k:d,l:d.slice(8),v,st:itemF||!t?"":stateOf(v,t.goal,t.needed>0?t.needed+exOf(GE[d]||[]):0)}});
   const mx=Math.max(1,...bars.map(b=>b.v));
-  $("rChart").innerHTML=bars.map(b=>`<div class="${b.over?"over":""}" style="height:${b.v/mx*100}%" title="${b.k}: ${f(b.v,0)} kcal"></div>`).join("");
+  $("rChart").innerHTML=bars.map(b=>`<div class="${b.st?"s-"+b.st:""}" style="height:${b.v/mx*100}%" title="${b.k}: ${f(b.v,0)} kcal"></div>`).join("");
   $("rLbls").innerHTML=bars.map(b=>`<span>${b.l}</span>`).join("");
-  $("rChartNote").textContent=bars.length?(byMonth?"Average kcal per logged day, by month.":"Kcal eaten per day. Red bars are above that day's goal."):"No data in this period.";
+  $("rChartNote").innerHTML=bars.length?(byMonth?"Average kcal per logged day, by month.":"Kcal eaten per day.")+(itemF?"":' <span class="lg s-ok"></span>at or under goal <span class="lg s-warn"></span>over goal <span class="lg s-over"></span>over total needed (needed + exercise)'):"No data in this period.";
   const kc=T.pro*4+T.carb*4+T.fat*9;
   $("rAvg").innerHTML=n?`<div class="scroll"><table><tr><th></th>${NUT.map(x=>`<th>${x[1]} (${x[2]})</th>`).join("")}</tr><tr><td class="l">Total</td>${NUT.map(([k])=>`<td>${f(T[k])}</td>`).join("")}</tr><tr><td class="l">Average per day</td>${NUT.map(([k])=>`<td>${f(T[k]/n)}</td>`).join("")}</tr></table></div><p class="hint">Calories from macros: protein ${kc?f(T.pro*4/kc*100,0):0}%, carbs ${kc?f(T.carb*4/kc*100,0):0}%, fat ${kc?f(T.fat*9/kc*100,0):0}%.</p>`:'<div class="empty">No data in this period.</div>';
   const I={};L.forEach(l=>{const o=I[l.name+"|"+l.unit]=I[l.name+"|"+l.unit]||{name:l.name,unit:l.unit,amt:0,c:0,t:0};o.amt+=l.amt;o.c+=l.n.cal;o.t++});
   const TI=Object.values(I).sort((a,b)=>b.c-a.c).slice(0,10);
   $("rTop").innerHTML=TI.length?`<tr><th>Item</th><th>Times</th><th>Total amount</th><th>kcal</th><th>% of total</th></tr>`+TI.map(o=>`<tr><td class="l">${esc(o.name)}</td><td>${o.t}</td><td>${f(o.amt)} ${esc(o.unit)}</td><td>${f(o.c)}</td><td>${T.cal?f(o.c/T.cal*100,0):0}%</td></tr>`).join(""):`<tr><td class="empty">No data in this period.</td></tr>`;
-  $("rDays").innerHTML=n?food.slice().reverse().map((d,ix)=>{const D=G[d],t=sum(D),tg=tgt(d),goal=tg?tg.goal:0,pc=goal?Math.min(100,t.cal/goal*100):0;
-    return`<details class="card day" data-k="f${d}"${isOpen("f"+d,ix)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(t.cal,0)} kcal${goal?` / ${f(goal,0)}`:""}</span><span class="smac">Protein ${f(t.pro)} g · Carbs ${f(t.carb)} g · Fat ${f(t.fat)} g · ${D.length} ${D.length===1?"entry":"entries"}</span>${goal?`<div class="bar"><i class="${t.cal>goal?"over":""}" style="width:${pc}%"></i></div>`:""}</summary>
+  $("rDays").innerHTML=n?food.slice().reverse().map((d,ix)=>{const D=G[d],t=sum(D),tg=tgt(d),goal=tg?tg.goal:0,nd=tg&&tg.needed>0?tg.needed+exOf(GE[d]||[]):0,stt=stateOf(t.cal,goal,nd),scale=Math.max(nd,goal,1),pc=Math.min(100,t.cal/scale*100),tk=Math.min(100,goal/scale*100);
+    return`<details class="card day" data-k="f${d}"${isOpen("f"+d,ix)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(t.cal,0)} kcal${goal?` / ${f(goal,0)}`:""}</span><span class="smac">Protein ${f(t.pro)} g · Carbs ${f(t.carb)} g · Fat ${f(t.fat)} g · ${D.length} ${D.length===1?"entry":"entries"}</span>${!itemF&&(goal||nd)?`<div class="bar"><i class="${stt?"s-"+stt:""}" style="width:${pc}%"></i>${goal&&nd?`<b class="tk" style="left:${tk}%"></b>`:""}</div>`:""}</summary>
     <div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Item</th><th>Amount</th>${NUT.map(x=>`<th>${x[1]}</th>`).join("")}<th class="noprint"></th></tr>
     ${foodRows(D,NUT.map(n=>n[0]),true)}
     <tr class="tot"><td colspan="3" class="l">Day total</td>${NUT.map(([k])=>`<td>${f(t[k])}</td>`).join("")}<td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No food recorded in this period. Add some in the Log tab.</div>';
   bindFoodDel($("rDays"),renderRec);
   /* ===== EXERCISE ===== */
-  const E=filteredEx(),GE=group(E),ed=Object.keys(GE).sort().reverse();
+  const ed=Object.keys(GE).sort().reverse();
   $("eStats").innerHTML=stat([[f(exOf(E),0),"Total burned (kcal)"],[E.length,"Sessions"],[ed.length,"Active days"],[ed.length?f(exOf(E)/ed.length,0):0,"Avg burned per active day"]]);
   $("eDays").innerHTML=ed.length?ed.map((d,ix)=>{const X=GE[d];return`<details class="card day" data-k="e${d}"${isOpen("e"+d,ix)?" open":""}><summary><span class="sdt">${dlong(d)}</span><span class="ssum">${f(exOf(X),0)} kcal burned</span><span class="smac">${X.length} ${X.length===1?"session":"sessions"}</span></summary><div class="dbody"><div class="scroll"><table><tr><th>Time</th><th>Exercise</th><th>Burned (kcal)</th><th class="noprint"></th></tr>${X.map(x=>`<tr><td class="l tm">${hm(new Date(x.ts))}</td><td class="l nm">${esc(x.name)}</td><td>${f(x.kcal,0)}</td><td class="noprint"><button class="btn dg sm" data-xe="${esc(x.id)}">Delete</button></td></tr>`).join("")}<tr class="tot"><td colspan="2" class="l">Day total</td><td>${f(exOf(X),0)}</td><td class="noprint"></td></tr></table></div></div></details>`}).join(""):'<div class="card empty">No exercise recorded in this period.</div>';
   $("eDays").querySelectorAll("[data-xe]").forEach(b=>b.onclick=()=>delEx(b.dataset.xe,renderRec));
@@ -591,21 +599,9 @@ function renderRec(){
 
 /* downloads */
 function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast("Downloaded "+name)}
-const csvCell=c=>{let t=String(c);if(typeof c==="string"&&/^[=+\-@\t\r]/.test(t))t="'"+t;return /[",\n]/.test(t)?`"${t.replace(/"/g,'""')}"`:t};
-const csv=rows=>"\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
-const r2=n=>Math.round((n||0)*100)/100;
 const stamp=()=>ymd(new Date());
-$("xDet").onclick=()=>{const L=filtered();dl(`entries-${stamp()}.csv`,csv([["Date","Time","Item","Amount","Unit","Combo",...NUT.map(n=>`${n[1]} (${n[2]})`)],...L.map(l=>{const d=new Date(l.ts);return[ymd(d),hm(d),l.name,l.amt,l.unit,l.combo||"",...NUT.map(([k])=>r2(l.n[k]))]})]),"text/csv")};
-$("xDay").onclick=()=>{const L=filtered(),X=filteredEx(),W=filteredWt(),G=group(L),GE=group(X),GW=group(W),ds=[...new Set([...Object.keys(G),...Object.keys(GE),...Object.keys(GW)])].sort();
-  dl(`daily-totals-${stamp()}.csv`,csv([["Date","Entries",...NUT.map(n=>`${n[1]} (${n[2]})`),"Needed (kcal)","Goal (kcal)","Exercise burned (kcal)","Available (needed + exercise)","Deficit (+) / Surplus (-)","Weight (kg)"],...ds.map(d=>{const t=sum(G[d]||[]),i=info(d,G[d],GE[d]);return[d,(G[d]||[]).length,...NUT.map(([k])=>r2(t[k])),i.t?i.t.needed:"",i.t?i.t.goal:"",r2(i.burn),i.ok?r2(i.allow):"",i.def===null?"":r2(i.def),GW[d]?GW[d][GW[d].length-1].kg:""]})]),"text/csv")};
-$("xEx").onclick=()=>{const X=filteredEx();dl(`exercise-${stamp()}.csv`,csv([["Date","Time","Exercise","Calories burned"],...X.map(x=>{const d=new Date(x.ts);return[ymd(d),hm(d),x.name,r2(x.kcal)]})]),"text/csv")};
-$("xWt").onclick=()=>{const W=filteredWt();dl(`weight-${stamp()}.csv`,csv([["Date","Time","Weight (kg)"],...W.map(x=>{const d=new Date(x.ts);return[ymd(d),hm(d),x.kg]})]),"text/csv")};
-$("xItems").onclick=()=>dl(`items-${stamp()}.csv`,csv([["Item","Unit",...NUT.map(n=>`${n[1]} (${n[2]}) per 1 unit`)],...S.items.map(i=>[i.name,i.unit,...NUT.map(([k])=>i[k])])]),"text/csv");
-$("xRep").onclick=()=>{const c=document.createElement("div");c.appendChild($("rTitle").cloneNode(true));[["Food",["rStats","rAvg","rTop","rDays"]],["Exercise",["eStats","eDays"]],["Weight",["wStats","rWt","wDays"]],["Balance",["bStats","bDays"]]].forEach(([h,ids])=>{const t=document.createElement("h2");t.textContent=h;c.appendChild(t);ids.forEach(i=>c.appendChild($(i).cloneNode(true)))});c.querySelectorAll(".noprint,.chart,.lbls").forEach(e=>e.remove());c.querySelectorAll("details").forEach(d=>d.setAttribute("open",""));
-  const css="body{font:13px Segoe UI,Arial,sans-serif;margin:24px;color:#111}table{width:100%;border-collapse:collapse}th,td{padding:4px 6px;text-align:right;border-bottom:1px solid #ccc}th:first-child,td:first-child,.l{text-align:left}.stats{display:flex;gap:10px;flex-wrap:wrap}.st{border:1px solid #ccc;padding:8px 12px}.st b{display:block;font-size:20px}.dh{display:flex;justify-content:space-between;font-weight:700;margin-top:14px}tr.tot td{font-weight:700;background:#f5e9c8}.bar{display:none}h2{font-size:15px;margin:16px 0 6px}.card{break-inside:avoid}summary{list-style:none;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}summary::after{display:none}.sdt{font-weight:700}.ssum{font-weight:700}.smac{width:100%;color:#555;font-size:12px}details.day{border:1px solid #ccc;padding:8px;margin-top:10px;break-inside:avoid}.dbody{margin-top:6px}";
-  dl(`report-${stamp()}.html`,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Calorie report</title><style>${css}</style></head><body><p style="color:#666">Open this file and press Ctrl+P to print or save as PDF.</p>${c.innerHTML}</body></html>`,"text/html")};
 $("xJson").onclick=()=>dl(`calorie-tracker-backup-${stamp()}.json`,JSON.stringify(S,null,2),"application/json");
-$("xImp").onchange=e=>{const fl=e.target.files[0];if(!fl)return;if(fl.size>3e7)return toast("That file is too large");const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.logs))throw 0;ask("Replace all current data with this backup?",()=>{S=cleanState({items:d.items,logs:d.logs,targets:d.targets,ex:d.ex,wt:d.wt,combos:d.combos});if(d.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:d.goal});S.del={};tInit=false;hydrate();COLS.forEach(c=>S[c].forEach(r=>r.u=Date.now()));save();allFiles().forEach(markDirty);if(cfg.token)schedule();renderItems();renderRec();toast("Backup restored")},"Yes, replace")}catch(x){toast("Not a valid backup file")}};r.readAsText(fl);e.target.value=""};
+$("xImp").onchange=e=>{const fl=e.target.files[0];if(!fl)return;if(fl.size>3e7)return toast("That file is too large");const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.logs))throw 0;ask("Replace all current data with this backup?\nEverything on this device will be replaced by the file.",()=>{S=cleanState({items:d.items,logs:d.logs,targets:d.targets,ex:d.ex,wt:d.wt,combos:d.combos});if(d.goal&&!S.targets.length)S.targets.push({from:"2000-01-01",needed:0,goal:d.goal});S.del={};tInit=false;hydrate();COLS.forEach(c=>S[c].forEach(r=>r.u=Date.now()));save();allFiles().forEach(markDirty);if(cfg.token)schedule();renderItems();renderRec();toast("Backup restored")},"Yes, replace")}catch(x){toast("Not a valid backup file")}};r.readAsText(fl);e.target.value=""};
 
 /* ---------- mobile helpers ---------- */
 const MQ=window.matchMedia?matchMedia("(max-width:700px)"):{matches:false,addEventListener(){}};
@@ -690,7 +686,7 @@ function renderSync(){const on=!!cfg.token;$("sForm").style.display=on?"none":""
   $("sStat").innerHTML=on?`<p><b>Connected</b> to ${esc(cfg.owner)}/${esc(cfg.repo)}.</p><p>Last successful sync: ${cfg.last?esc(new Date(cfg.last).toLocaleString()):"never"}. Changes waiting: ${cfg.pend||0}.</p>${st.s==="err"?`<p style="color:var(--dg)"><b>Problem:</b> ${esc(st.msg)}</p>`:""}<p class="hint">This app syncs when you open it, when you switch back to it, and a few seconds after you save something.</p>`:`<p>This device is <b>not connected</b>. Your data is saved only in this browser. Fill in the form below to connect.</p>`}
 $("syncBadge").onclick=()=>show("sync");
 $("sNow").onclick=()=>schedule(0);
-$("sOff").onclick=()=>ask("Disconnect this device? Your data stays on this device and in GitHub.",()=>{Object.assign(cfg,{token:"",pass:"",salt:"",it:0,shas:{},dirty:[],pend:0,last:0});KEY=null;saveCfg();setSt("off");renderSync();toast("Disconnected")},"Yes, disconnect");
+$("sOff").onclick=()=>ask("Disconnect this device?\nYour data stays on this device and in GitHub.",()=>{Object.assign(cfg,{token:"",pass:"",salt:"",it:0,shas:{},dirty:[],pend:0,last:0});KEY=null;saveCfg();setSt("off");renderSync();toast("Disconnected")},"Yes, disconnect");
 $("sGo").onclick=async()=>{
   const owner=$("sOwner").value.trim(),repo=$("sRepo").value.trim(),token=$("sTok").value.trim(),pass=$("sPass").value,pass2=$("sPass2").value;
   if(!owner||!repo||!token||!pass)return toast("Fill in all the fields");
